@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación Técnica, MER y Modelo Relacional — Recuperaciones Naranjo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ea580c;
+            --primary-hover: #c2410c;
+            --primary-light: #fff7ed;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-500: #64748b;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            --slate-50: #f8fafc;
+            --white: #ffffff;
+            --success: #16a34a;
+            --info: #0284c7;
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: var(--slate-700);
+            line-height: 1.6;
+        }
+        header {
+            background: var(--slate-900);
+            color: var(--white);
+            padding: 18px 32px;
+            border-bottom: 2px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-title p {
+            font-size: 0.8125rem;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary {
+            background: #1e293b;
+            color: #cbd5e1;
+            border-color: #334155;
+        }
+        .btn-secondary:hover { background: #334155; color: var(--white); }
+        .layout-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--slate-200);
+            margin-bottom: 24px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .nav-tab {
+            padding: 10px 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            color: var(--slate-600);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .nav-tab:hover {
+            color: var(--slate-900);
+            background: #f1f5f9;
+        }
+        .nav-tab.active {
+            color: var(--primary);
+            background: var(--white);
+            border-color: var(--slate-200);
+            border-bottom-color: var(--white);
+            margin-bottom: -1px;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            border-bottom: 1px solid var(--slate-200);
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header h2 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .diagram-img-box {
+            text-align: center;
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+        .diagram-img-box img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-sm);
+            display: block;
+            margin: 0 auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+            margin: 16px 0;
+        }
+        .data-table th {
+            background: var(--slate-50);
+            color: var(--slate-700);
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--slate-200);
+            font-weight: 600;
+        }
+        .data-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--slate-200);
+            color: var(--slate-600);
+        }
+        .data-table tr:hover td {
+            background: #f8fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            border-radius: var(--radius-xs);
+            text-transform: uppercase;
+        }
+        .badge-pk { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-fk { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+        .badge-uk { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-critico { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+        pre.code-block {
+            background: #0f172a;
+            color: #f8fafc;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            padding: 18px;
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            line-height: 1.5;
+            max-height: 450px;
+        }
+        .pill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .pill-card {
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            background: var(--white);
+        }
+        .pill-card h4 {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 6px;
+        }
+        .pill-card p {
+            font-size: 0.78125rem;
+            color: var(--slate-500);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">
+        <h1>🛡️ Recuperaciones Naranjo Recycling S.A.S. — Documentación Técnica</h1>
+        <p>Sede Mamonal (Cartagena de Indias) • Modelo Entidad-Relación (MER), Modelo Relacional Físico 3NF y Régimen 42h</p>
+    </div>
+    <div class="header-actions">
+        <a href="/" class="btn btn-secondary">🖥️ Kiosco y Panel en Vivo</a>
+        <a href="/Plan_Sistema_Acceso_Recuperaciones_Naranjo_Cartagena.docx" class="btn btn-primary" download>📥 Descargar Documento Word (.docx)</a>
+    </div>
+</header>
+
+<div class="layout-container">
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchDocTab('tab-mer')">🗄️ Modelo Entidad-Relación (MER)</button>
+        <button class="nav-tab" onclick="switchDocTab('tab-relacional')">📑 Modelo Relacional Físico (3NF)</button>
+        <button class="nav-tab" onclick="switchDocTab('tab-schema')">💻 Script SQL (schema.sql)</button>
+        <button class="nav-tab" onclick="switchDocTab('tab-cargos')">👷 Cargos y Padrón Real</button>
+        <button class="nav-tab" onclick="switchDocTab('tab-horarios')">⏰ Horarios Ley 2101 (42h)</button>
+        <button class="nav-tab" onclick="switchDocTab('tab-diagramas')">📐 Galería de 9 Diagramas</button>
+    </div>
+
+    <!-- TAB 1: MODELO ENTIDAD-RELACIÓN -->
+    <div id="tab-mer" class="tab-pane active">
+        <div class="card">
+            <div class="card-header">
+                <h2>🗄️ Modelo Entidad-Relación (MER / ERD) Conceptual y Lógico</h2>
+                <span class="badge" style="background:#e0e7ff; color:#3730a3;">Alta Resolución (2000 x 1250 px)</span>
+            </div>
+            <p>Representa las entidades conceptuales del sistema, su grado de dependencia y sus cardinalidades (1:1, 1:N, N:M):</p>
+            <div class="diagram-img-box">
+                <img src="/docs/diagramas_naranjo_png/07_Modelo_Entidad_Relacion_ERD_Naranjo.png" alt="Diagrama 07: Modelo Entidad-Relación (ERD)">
+            </div>
+            <div class="pill-grid">
+                <div class="pill-card">
+                    <h4>Entidades Maestras Independientes</h4>
+                    <p><code>CONFIGURACION_EMPRESA</code> (NIT 901.884.219-5), <code>DEPARTAMENTOS</code> (Patio, Taller, Garita, Admin), <code>ZONAS_ACCESO</code> (ZON-01 a ZON-05), <code>TURNOS_LABORALES</code> (42h Ley 2101) y <code>PERMISOS_CATALOGO</code> (18 permisos atómicos).</p>
+                </div>
+                <div class="pill-card">
+                    <h4>Entidades Dependientes y Padrón</h4>
+                    <p><code>CARGOS</code> (depende de departamento), <code>TRABAJADORES</code> (depende de cargo y cedula colombiana), <code>USUARIOS</code> (acceso IAM) y <code>VEHICULOS_CAMIONES_CHATARRA</code> (padrón de transporte).</p>
+                </div>
+                <div class="pill-card">
+                    <h4>Entidades Transaccionales de Alta Frecuencia</h4>
+                    <p><code>REGISTROS_ACCESO</code> (fichajes con Anti-Passback), <code>JORNADAS_LIQUIDADAS</code> (HOD, HED, HEN, RN, RDF), <code>AUTORIZACIONES_EXTRAS</code>, <code>PESAJES_BASCULA</code>, <code>SESIONES_ACTIVAS</code> y <code>AUDIT_LOGS</code>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: MODELO RELACIONAL FÍSICO 3NF -->
+    <div id="tab-relacional" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <h2>📑 Modelo Relacional Físico y Tablas Normalizadas (3NF)</h2>
+                <span class="badge" style="background:#ecfdf5; color:#065f46;">Normalizado en 3NF</span>
+            </div>
+            <p>Esquema físico normalizado en Tercera Forma Normal (3NF) con claves primarias (PK), foráneas (FK), restricciones de unicidad (UK) y reglas referenciales <code>ON DELETE RESTRICT / CASCADE</code>:</p>
+            <div class="diagram-img-box">
+                <img src="/docs/diagramas_naranjo_png/09_Modelo_Relacional_Tablas_Fisicas.png" alt="Diagrama 09: Modelo Relacional Físico">
+            </div>
+
+            <h3 style="margin: 20px 0 10px; font-size: 1rem; color: var(--slate-900);">Diccionario Sintético de Tablas del Esquema Relacional</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tabla Física</th>
+                        <th>Clave Primaria (PK)</th>
+                        <th>Claves Foráneas (FK)</th>
+                        <th>Restricción de Integridad</th>
+                        <th>Función Operativa en Cartagena</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>trabajadores</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">cargo_id -> cargos(id)</span></td>
+                        <td><code>ON DELETE RESTRICT</code></td>
+                        <td>Padrón oficial. Consulta por Cédula física (CC) en garita.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>registros_acceso</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">trabajador_id</span>, <span class="badge badge-fk">zona_id</span></td>
+                        <td><code>ON DELETE RESTRICT</code></td>
+                        <td>Movimientos de entrada y salida, minutos trabajados y Anti-Passback.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>turnos_laborales</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td>Ninguna</td>
+                        <td><code>CHECK (codigo_dia BETWEEN 0 AND 6)</code></td>
+                        <td>Distribución exacta de 42h (Lun 7h, Mar/Vie 8.5h, Mié/Jue 9h).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>jornadas_liquidadas_diarias</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">trabajador_id</span>, <span class="badge badge-fk">reg_acceso_id</span></td>
+                        <td><code>UNIQUE (trabajador_id, fecha)</code></td>
+                        <td>Cómputo legal de horas ordinarias y recargos (HED, HEN, RN, RDF).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>cargos</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">departamento_id</span></td>
+                        <td><code>ON DELETE RESTRICT</code></td>
+                        <td>Puestos oficiales y bandera <code>es_puesto_critico</code> para maquinaria.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>pesajes_bascula</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">vehiculo_id -> vehiculos</span></td>
+                        <td><code>ON DELETE RESTRICT</code></td>
+                        <td>Control de camiones chatarra: peso bruto, tara y peso neto.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>usuarios</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">rol_id -> roles_sistema</span></td>
+                        <td><code>ON DELETE RESTRICT</code></td>
+                        <td>Cuentas de seguridad scrypt con política de sesiones concurrentes.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>rol_permisos</strong></td>
+                        <td><span class="badge badge-pk">id</span></td>
+                        <td><span class="badge badge-fk">rol_id</span>, <span class="badge badge-fk">permiso_id</span></td>
+                        <td><code>ON DELETE CASCADE</code></td>
+                        <td>Matriz asociativa N:M de asignación de privilegios a roles.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 3: SCRIPT SQL -->
+    <div id="tab-schema" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <h2>💻 Script SQL DDL y DML Completo (`database/schema.sql`)</h2>
+                <a href="/database/schema.sql" class="btn btn-secondary" download>📥 Descargar schema.sql</a>
+            </div>
+            <p>Contiene la definición completa de base de datos, 20 tablas relacionales, 3 vistas operativas, 3 triggers automáticos y todos los datos semilla de Recuperaciones Naranjo:</p>
+            <pre class="code-block"><code>-- ============================================================================
+-- BASE DE DATOS: SENTINELPRO ACCESS & IAM (RECUPERACIONES NARANJO S.A.S.)
+-- SEDE: Zona Industrial Mamonal, Cartagena de Indias, Bolívar
+-- ============================================================================
+
+CREATE DATABASE IF NOT EXISTS `sentinelpro_iam`
+CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE `sentinelpro_iam`;
+
+-- 1. TABLA CONFIGURACION
+CREATE TABLE `configuracion_empresa` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `nombre_empresa` VARCHAR(150) NOT NULL DEFAULT 'Recuperaciones Naranjo Recycling S.A.S.',
+    `nit_ruc` VARCHAR(30) NOT NULL DEFAULT '901.884.219-5',
+    `jornada_semanal_horas` DECIMAL(4,1) NOT NULL DEFAULT 42.0,
+    `tolerancia_tardanza_min` INT NOT NULL DEFAULT 10,
+    `aforo_maximo_planta` INT NOT NULL DEFAULT 150
+);
+
+-- 2. TABLA TURNOS LABORALES (42 HORAS)
+CREATE TABLE `turnos_laborales` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `dia` VARCHAR(25) NOT NULL,
+    `codigo_dia` INT NOT NULL,
+    `hora_entrada` TIME NOT NULL,
+    `hora_salida` TIME NOT NULL,
+    `horas_ordinarias` DECIMAL(4,2) NOT NULL,
+    `es_jornada_extra` BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- 3. TABLA TRABAJADORES (PADRÓN MAESTRO NARANJO)
+CREATE TABLE `trabajadores` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `codigo_credencial` VARCHAR(30) NOT NULL UNIQUE,
+    `documento` VARCHAR(30) NOT NULL UNIQUE, -- Cédula de Ciudadanía (CC)
+    `nombre_completo` VARCHAR(160) NOT NULL,
+    `cargo_id` INT NOT NULL,
+    `tipo_personal` ENUM('PATIO', 'ADMINISTRACION', 'APRENDIZ_SENA') NOT NULL,
+    `es_puesto_critico` BOOLEAN NOT NULL DEFAULT FALSE,
+    `arl_vigente` BOOLEAN NOT NULL DEFAULT TRUE,
+    `estado` ENUM('ACTIVO', 'SUSPENDIDO', 'INACTIVO') NOT NULL DEFAULT 'ACTIVO',
+    `ubicacion_actual` ENUM('DENTRO_PLANTA', 'FUERA_PLANTA') NOT NULL DEFAULT 'FUERA_PLANTA',
+    FOREIGN KEY (`cargo_id`) REFERENCES `cargos`(`id`) ON DELETE RESTRICT
+);
+
+-- [Ver archivo completo database/schema.sql con más de 800 líneas de código DDL y DML]</code></pre>
+        </div>
+    </div>
+
+    <!-- TAB 4: CARGOS Y PADRÓN -->
+    <div id="tab-cargos" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <h2>👷 Padrón Oficial de Cargos y Personal de Recuperaciones Naranjo</h2>
+                <span class="badge" style="background:#fef3c7; color:#92400e;">14 Colaboradores Reales</span>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Área / Depto</th>
+                        <th>Cargo Parametrizado</th>
+                        <th>Colaborador Real</th>
+                        <th>Cédula (CC)</th>
+                        <th>Criticidad</th>
+                        <th>Jornada Base</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Patio / Supervisión</strong></td>
+                        <td>Jefe de Patio</td>
+                        <td>Manuel Ricardo Naranjo</td>
+                        <td><code>73.189.450</code></td>
+                        <td><span class="badge badge-critico">Crítico</span></td>
+                        <td>Lunes a Viernes 42h + Aprobación Extras</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Patio / Maquinaria</strong></td>
+                        <td>Operador Grúa Pulpo #1</td>
+                        <td>Jadinson Pérez</td>
+                        <td><code>1.047.412.890</code></td>
+                        <td><span class="badge badge-critico">Crítico</span></td>
+                        <td>Alerta de ausencia a los 15 minutos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Patio / Maquinaria</strong></td>
+                        <td>Operador Grúa Pulpo #2</td>
+                        <td>Emiro Torres</td>
+                        <td><code>73.201.844</code></td>
+                        <td><span class="badge badge-critico">Crítico</span></td>
+                        <td>Alerta de ausencia a los 15 minutos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Patio / Maquinaria</strong></td>
+                        <td>Operador de Montacargas</td>
+                        <td>Everth Zúñiga</td>
+                        <td><code>1.050.893.412</code></td>
+                        <td><span class="badge badge-critico">Crítico</span></td>
+                        <td>Alerta de ausencia a los 15 minutos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Patio / Mantenimiento</strong></td>
+                        <td>Mecánico de Planta</td>
+                        <td>Álvaro Morales</td>
+                        <td><code>9.283.741</code></td>
+                        <td><span class="badge badge-critico">Crítico</span></td>
+                        <td>Preventivo de máquinas en sábados (HED)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Patio / Cuadrilla</strong></td>
+                        <td>Ayudantes de Patio (x3)</td>
+                        <td>Brayan H., Yonier M., Deivis A.</td>
+                        <td><code>1.047.518.902...</code></td>
+                        <td>Operativo</td>
+                        <td>Clasificación de chatarra y estiba</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Patio / Oxicorte</strong></td>
+                        <td>Oxigenista / Clasificador</td>
+                        <td>Wilmer Sánchez</td>
+                        <td><code>1.047.399.812</code></td>
+                        <td><span class="badge badge-critico">Crítico</span></td>
+                        <td>Corte con soplete de vigas navales</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Administración</strong></td>
+                        <td>Contador General</td>
+                        <td>Claudia Herrera</td>
+                        <td><code>45.512.890</code></td>
+                        <td>Admin</td>
+                        <td>Lunes a Viernes 42h (Descanso Sáb/Dom)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Administración</strong></td>
+                        <td>Auxiliar Contable</td>
+                        <td>Lina Osorio</td>
+                        <td><code>1.047.481.903</code></td>
+                        <td>Admin</td>
+                        <td>Lunes a Viernes 42h (Descanso Sáb/Dom)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Administración</strong></td>
+                        <td>Auxiliar Administrativo</td>
+                        <td>Kelly Vásquez</td>
+                        <td><code>1.048.392.011</code></td>
+                        <td>Admin</td>
+                        <td>Lunes a Viernes 42h (Descanso Sáb/Dom)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aprendizaje SENA</strong></td>
+                        <td>Auxiliar SENA (Activo)</td>
+                        <td>Juan Montes</td>
+                        <td><code>1.051.203.948</code></td>
+                        <td>Formativo</td>
+                        <td>Prohibición legal de horas extras</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aprendizaje SENA</strong></td>
+                        <td>Auxiliar SENA (Suspendido)</td>
+                        <td>Esteban Vargas</td>
+                        <td><code>1.052.849.201</code></td>
+                        <td>Suspendido</td>
+                        <td><span class="badge badge-pk">Bloqueo Garita</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 5: HORARIOS LEY 2101 -->
+    <div id="tab-horarios" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <h2>⏰ Tabla Oficial de Horarios Laborales (L-V 42 Horas Semanales)</h2>
+                <span class="badge" style="background:#e0f2fe; color:#0369a1;">Ley 2101 / CST Colombia</span>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Día de la Semana</th>
+                        <th>Hora Entrada</th>
+                        <th>Inicio Almuerzo</th>
+                        <th>Fin Almuerzo</th>
+                        <th>Hora Salida</th>
+                        <th>Horas Ordinarias Netas</th>
+                        <th>Tratamiento para Nómina</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Lunes</strong></td>
+                        <td>8:00 AM</td>
+                        <td>12:00 PM</td>
+                        <td>1:30 PM (90 min)</td>
+                        <td>4:30 PM</td>
+                        <td><strong>7.0 Horas</strong></td>
+                        <td>Ordinaria (HOD 1.0)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Martes</strong></td>
+                        <td>7:30 AM</td>
+                        <td>12:00 PM</td>
+                        <td>1:00 PM (60 min)</td>
+                        <td>5:00 PM</td>
+                        <td><strong>8.5 Horas</strong></td>
+                        <td>Ordinaria (HOD 1.0)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Miércoles</strong></td>
+                        <td>7:30 AM</td>
+                        <td>12:00 PM</td>
+                        <td>1:00 PM (60 min)</td>
+                        <td>5:30 PM</td>
+                        <td><strong>9.0 Horas</strong></td>
+                        <td>Ordinaria (HOD 1.0)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Jueves</strong></td>
+                        <td>7:30 AM</td>
+                        <td>12:00 PM</td>
+                        <td>1:00 PM (60 min)</td>
+                        <td>5:30 PM</td>
+                        <td><strong>9.0 Horas</strong></td>
+                        <td>Ordinaria (HOD 1.0)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Viernes</strong></td>
+                        <td>7:30 AM</td>
+                        <td>12:00 PM</td>
+                        <td>1:00 PM (60 min)</td>
+                        <td>5:00 PM</td>
+                        <td><strong>8.5 Horas</strong></td>
+                        <td>Ordinaria (HOD 1.0)</td>
+                    </tr>
+                    <tr style="background:#fff7ed;">
+                        <td><strong>Sábado</strong></td>
+                        <td colspan="4">No Laboral (Admin) / Convocatoria Extraordinaria Patio</td>
+                        <td><strong>Extra Patio</strong></td>
+                        <td>Hora Extra Diurna (HED +25%)</td>
+                    </tr>
+                    <tr style="background:#fff7ed;">
+                        <td><strong>Domingo / Festivo</strong></td>
+                        <td colspan="4">No Laboral (Admin) / Convocatoria Extraordinaria Patio</td>
+                        <td><strong>Extra Patio</strong></td>
+                        <td>Recargo Dominical/Festivo (RDF +75%/100%)</td>
+                    </tr>
+                    <tr style="background:#f1f5f9; font-weight:700;">
+                        <td>TOTAL SEMANAL</td>
+                        <td colspan="4">Lunes a Viernes Régimen Ordinario Completo</td>
+                        <td><strong>42.0 Horas</strong></td>
+                        <td>Cumple 100% Ley 2101 / CST</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 6: GALERÍA DE DIAGRAMAS -->
+    <div id="tab-diagramas" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <h2>📐 Galería de Diagramas Oficiales de Arquitectura (9 Diagramas)</h2>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:24px;">
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">1. Casos de Uso por Cargo Oficial Naranjo</h3>
+                    <img src="/docs/diagramas_naranjo_png/01_Casos_De_Uso_Recuperaciones_Naranjo.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">2. Arquitectura en Capas y Motor de Liquidación 42 Horas</h3>
+                    <img src="/docs/diagramas_naranjo_png/02_Arquitectura_Capas_Y_Motor_42Horas.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">3. Secuencia de Fichaje en Kiosco con Cédula de Ciudadanía</h3>
+                    <img src="/docs/diagramas_naranjo_png/03_Secuencia_Fichaje_Kiosco_Cedula.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">4. Secuencia: Monitoreo de Cuadrilla de Maquinaria Pesada para Jefe de Patio</h3>
+                    <img src="/docs/diagramas_naranjo_png/04_Secuencia_Monitoreo_Cuadrilla_Jefe_Patio.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">5. Flujo de Liquidación de Jornadas y Recargos de Fin de Semana</h3>
+                    <img src="/docs/diagramas_naranjo_png/05_Flujo_Liquidacion_Jornadas_Y_Horas_Extras.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">6. Máquina de Estados del Trabajador en Planta</h3>
+                    <img src="/docs/diagramas_naranjo_png/06_Estados_Trabajador_Y_Ciclo_Turno.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">7. Modelo Entidad-Relación (MER / ERD) Conceptual y Lógico</h3>
+                    <img src="/docs/diagramas_naranjo_png/07_Modelo_Entidad_Relacion_ERD_Naranjo.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">8. Despliegue Físico de Hardware y Red en Planta Mamonal (Cartagena)</h3>
+                    <img src="/docs/diagramas_naranjo_png/08_Despliegue_Hardware_Red_Planta_Cartagena.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+                <div>
+                    <h3 style="font-size:0.9375rem; margin-bottom:8px; color:var(--slate-900);">9. Modelo Relacional Físico y Tablas Normalizadas (3NF)</h3>
+                    <img src="/docs/diagramas_naranjo_png/09_Modelo_Relacional_Tablas_Fisicas.png" style="width:100%; border:1px solid #e2e8f0; border-radius:4px;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchDocTab(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(tabId);
+    if (target) target.classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+
+</body>
+</html>

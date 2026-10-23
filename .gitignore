@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS metadata & office locks
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+~$*.docx
+~$*.xlsx
+
+
+# Logs & temp
+logs/
+*.log
+.temp/
+.tmp/
