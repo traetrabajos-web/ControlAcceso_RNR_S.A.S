@@ -505,7 +505,7 @@ function processWorkerAccessMovement(db, params) {
 
         if (mysqlDb.isMySqlActive()) {
             if (regAbierto) {
-                mysqlDb.updateRegistroAccesoSalidaInDb(regAbierto.id, horaActual, minutos, formatDurationMinutes(minutos), observacion).catch(e => console.warn('MySQL updateRegistroSalida error:', e.message));
+                mysqlDb.updateRegistroAccesoSalidaInDb(regAbierto.id, horaActual, minutos, formatDurationMinutes(minutos), observacion, regAbierto.codigo_movimiento).catch(e => console.warn('MySQL updateRegistroSalida error:', e.message));
             }
             mysqlDb.updateTrabajadorUbicacion(trabajador.id, 'FUERA_PLANTA', null, `${today} ${horaActual}`).catch(e => console.warn('MySQL updateTrabajador error:', e.message));
         }

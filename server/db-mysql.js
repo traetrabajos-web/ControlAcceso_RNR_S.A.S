@@ -174,13 +174,13 @@ async function createRegistroAccesoInDb(reg) {
     return res.insertId;
 }
 
-async function updateRegistroAccesoSalidaInDb(regId, horaSalida, minutosTrabajados, horasFormateadas, observacion) {
+async function updateRegistroAccesoSalidaInDb(regId, horaSalida, minutosTrabajados, horasFormateadas, observacion, codigoMovimiento = null) {
     const p = getPool();
     await p.query(`
         UPDATE registros_acceso 
         SET hora_salida = ?, estado_ciclo = 'FINALIZADO', minutos_trabajados = ?, horas_formateadas = ?, observacion = ?
-        WHERE id = ?
-    `, [horaSalida, minutosTrabajados, horasFormateadas, observacion, regId]);
+        WHERE id = ? OR (codigo_movimiento IS NOT NULL AND codigo_movimiento = ?)
+    `, [horaSalida, minutosTrabajados, horasFormateadas, observacion, regId, codigoMovimiento || String(regId)]);
 }
 
 // ---------------------------------------------------------------------------

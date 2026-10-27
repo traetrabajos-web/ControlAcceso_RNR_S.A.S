@@ -1325,9 +1325,6 @@ async function markVisitorExit(id, name) {
 // ============================================================================
 // 10. MÓDULO SUPERVISIÓN DE PATIO Y CUADRILLAS EN VIVO (JEFE DE PATIO)
 // ============================================================================
-async // ============================================================================
-// 10. MÓDULO SUPERVISIÓN DE PATIO Y CUADRILLAS EN VIVO (JEFE DE PATIO)
-// ============================================================================
 async function loadPatioCuadrilla() {
     if (!AUTH_TOKEN) return;
     try {
