@@ -1,0 +1,6 @@
+{
+  "name": "RNR S.A.S. — Control Integral de Acceso y Asistencia 42h",
+  "description": "Sistema Empresarial de Control de Acceso, Asistencia 42h (Ley 2101 / CST) y Cuadrillas de Patio para Recuperaciones Naranjo Recycling S.A.S. en Cartagena.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
