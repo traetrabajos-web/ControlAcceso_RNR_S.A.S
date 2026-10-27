@@ -17,7 +17,7 @@
                 <span class="brand-name">RNR S.A.S.</span>
                 <div class="brand-sub">
                     <span class="brand-badge">SEDE PRINCIPAL · CARTAGENA</span>
-                    <span class="brand-door">🚪 Calle 10 # 56B - 128, Km 1, Vía Mamonal (Barrio Nuevo Campestre), Cartagena de Indias, Bolívar.</span>
+                    <span class="brand-door">🚪</span>
                     <span class="brand-status"><i class="status-dot"></i>Sistema en línea</span>
                 </div>
             </div>
@@ -497,8 +497,9 @@
                                 <thead>
                                     <tr>
                                         <th>Gafete</th>
-                                        <th>Visitante</th>
+                                        <th>Visitante / Conductor</th>
                                         <th>Empresa</th>
+                                        <th>Placa / Vehículo</th>
                                         <th>Anfitrión</th>
                                         <th>Entrada</th>
                                         <th>Salida</th>
@@ -1001,9 +1002,15 @@
                         <input type="text" id="mvis-gafete" class="input-std" placeholder="Ej: VIS-03">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Motivo de la Visita</label>
-                    <input type="text" id="mvis-motivo" class="input-std" placeholder="Ej: Mantenimiento de calderas en Nave 2">
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Placa Vehículo / Camión (Opcional)</label>
+                        <input type="text" id="mvis-placa" class="input-std" placeholder="Ej: SZK-442 o Particular">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Motivo de la Visita / Carga</label>
+                        <input type="text" id="mvis-motivo" class="input-std" placeholder="Ej: Descargue chatarra o Mantenimiento">
+                    </div>
                 </div>
                 <button class="btn btn-primary btn-block" onclick="saveNewVisitor()">
                     🟢 Registrar Ingreso y Asignar Gafete

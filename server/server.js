@@ -1446,6 +1446,7 @@ async function handleRequest(req, res) {
                 documento: String(body.documento).trim(),
                 nombre_completo: String(body.nombre_completo).trim(),
                 empresa_origen: body.empresa_origen || 'Particular / Contratista',
+                placa_vehiculo: body.placa_vehiculo || null,
                 anfitrion_visitado: body.anfitrion_visitado,
                 zona_autorizada: body.zona_autorizada || 'Portería Principal Peatonal (Torniquete Norte)',
                 motivo: body.motivo || 'Reunión / Gestión autorizada',
@@ -1469,6 +1470,23 @@ async function handleRequest(req, res) {
                 detalle: `Ingreso de visitante ${nuevoVisitante.nombre_completo} (${nuevoVisitante.empresa_origen}) con gafete ${nuevoVisitante.gafete}.`
             });
             saveDb(db);
+
+            if (mysqlDb.isMySqlActive()) {
+                mysqlDb.createVisitanteInDb({
+                    codigo_visita: nuevoVisitante.gafete,
+                    nombre_completo: nuevoVisitante.nombre_completo,
+                    documento: nuevoVisitante.documento,
+                    empresa_origen: nuevoVisitante.empresa_origen,
+                    placa_vehiculo: nuevoVisitante.placa_vehiculo,
+                    motivo_visita: nuevoVisitante.motivo,
+                    anfitrion_visitado: nuevoVisitante.anfitrion_visitado,
+                    gafete_asignado: nuevoVisitante.gafete,
+                    zona_id: 1,
+                    zona_nombre: 'Portería Principal Peatonal',
+                    arl_verificada: true,
+                    registrado_por_email: auth.user.email
+                }).catch(e => console.warn('MySQL createVisitante error:', e.message));
+            }
 
             return sendJson(res, 201, {
                 mensaje: `Visitante ${nuevoVisitante.nombre_completo} registrado con Gafete ${nuevoVisitante.gafete}.`,
@@ -1500,6 +1518,10 @@ async function handleRequest(req, res) {
                 detalle: `Salida de visitante ${vis.nombre_completo} (Gafete ${vis.gafete} liberado a las ${vis.hora_salida}).`
             });
             saveDb(db);
+
+            if (mysqlDb.isMySqlActive()) {
+                mysqlDb.updateVisitanteSalidaInDb(vis.id, vis.hora_salida, vis.gafete || vis.codigo_visita).catch(e => console.warn('MySQL updateVisitanteSalida error:', e.message));
+            }
 
             return sendJson(res, 200, {
                 mensaje: `Salida registrada para ${vis.nombre_completo}. Gafete ${vis.gafete} liberado.`,

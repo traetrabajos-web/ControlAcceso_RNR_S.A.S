@@ -831,6 +831,8 @@ function showTab(tabId) {
         loadPatioCuadrilla();
     } else if (tabId === 'tab-nomina') {
         loadNominaReport();
+    } else {
+        loadAdminDashboardData();
     }
 }
 
@@ -1222,11 +1224,11 @@ async function saveNewWorker() {
     }
 }
 
-// TAB 5: Visitantes
+// TAB 5: Visitantes y Camiones de Chatarra
 function renderVisitorsTable(visitantes) {
     const tbody = document.querySelector('#table-visitors tbody');
     if (!visitantes.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b;">No hay visitas registradas hoy.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#64748b;">No hay visitas registradas hoy.</td></tr>`;
         return;
     }
 
@@ -1236,11 +1238,16 @@ function renderVisitorsTable(visitantes) {
             ? `<button class="btn btn-warning btn-sm" onclick="markVisitorExit(${v.id}, '${v.nombre_completo}')">🔴 Salida</button>`
             : `<span style="color:#64748b;font-size:0.8rem;">Finalizada</span>`;
 
+        const placaHtml = v.placa_vehiculo 
+            ? `<span class="badge badge-primary">🚛 ${v.placa_vehiculo}</span>` 
+            : `<span style="color:#94a3b8;font-size:0.8rem;">Peatonal</span>`;
+
         return `
             <tr>
                 <td><strong>${v.gafete}</strong></td>
                 <td>${v.nombre_completo} <br><small>${v.documento}</small></td>
                 <td>${v.empresa_origen}</td>
+                <td>${placaHtml}</td>
                 <td>${v.anfitrion_visitado}</td>
                 <td>${v.hora_entrada}</td>
                 <td>${v.hora_salida || '--'}</td>
@@ -1257,12 +1264,17 @@ function openNewVisitorModal() {
 
 function closeNewVisitorModal() {
     document.getElementById('modal-new-visitor').classList.add('hidden');
+    ['mvis-name', 'mvis-doc', 'mvis-empresa', 'mvis-placa', 'mvis-host', 'mvis-gafete', 'mvis-motivo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
 }
 
 async function saveNewVisitor() {
     const name = document.getElementById('mvis-name').value.trim();
     const doc = document.getElementById('mvis-doc').value.trim();
     const empresa = document.getElementById('mvis-empresa').value.trim();
+    const placa = document.getElementById('mvis-placa') ? document.getElementById('mvis-placa').value.trim() : '';
     const host = document.getElementById('mvis-host').value.trim();
     const gafete = document.getElementById('mvis-gafete').value.trim();
     const motivo = document.getElementById('mvis-motivo').value.trim();
@@ -1283,6 +1295,7 @@ async function saveNewVisitor() {
                 nombre_completo: name,
                 documento: doc,
                 empresa_origen: empresa,
+                placa_vehiculo: placa || undefined,
                 anfitrion_visitado: host,
                 gafete: gafete || undefined,
                 motivo

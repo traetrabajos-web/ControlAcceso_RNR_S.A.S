@@ -397,9 +397,9 @@ async function createVisitanteInDb(v) {
     return res.insertId;
 }
 
-async function updateVisitanteSalidaInDb(id, horaSalida) {
+async function updateVisitanteSalidaInDb(id, horaSalida, codigoVisita = null) {
     const p = getPool();
-    await p.query('UPDATE visitantes SET hora_salida = ?, estado = "SALIO" WHERE id = ?', [horaSalida, id]);
+    await p.query('UPDATE visitantes SET hora_salida = ?, estado = "SALIO" WHERE id = ? OR (codigo_visita IS NOT NULL AND codigo_visita = ?) OR (gafete_asignado IS NOT NULL AND gafete_asignado = ?)', [horaSalida, id, codigoVisita || String(id), codigoVisita || String(id)]);
 }
 
 // ---------------------------------------------------------------------------

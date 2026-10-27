@@ -999,6 +999,22 @@
   ],
   "visitantes": [
     {
+      "id": 10,
+      "gafete": "CAM-08",
+      "codigo_visita": "CAM-08",
+      "documento": "73199882",
+      "nombre_completo": "Jairo Beltrán (Conductor Tractomula)",
+      "empresa_origen": "Transportes y Carga Mamonal S.A.S.",
+      "anfitrion_visitado": "Jorge Eliécer Naranjo (Jefe de Patio)",
+      "zona_autorizada": "Portería Principal Peatonal (Torniquete Norte)",
+      "motivo": "Reunión / Gestión autorizada",
+      "fecha": "2026-10-27",
+      "hora_entrada": "14:18",
+      "hora_salida": "14:18",
+      "estado": "SALIDA_REGISTRADA",
+      "registrado_por": "Ing. Carlos Naranjo (Director General)"
+    },
+    {
       "id": 9,
       "gafete": "CAM-02",
       "codigo_visita": "CAM-02",
@@ -1498,6 +1514,58 @@
   ],
   "sesiones_activas": [
     {
+      "session_id": "4b4d5f2a-d3f1-41ee-9116-6b92b392b31f",
+      "usuario_id": 1,
+      "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "ip": "::1",
+      "dispositivo": "Navegador Web",
+      "creada_en": "2026-10-27T19:20:45.928Z",
+      "ultima_actividad": "2026-10-27T19:20:45.928Z",
+      "expira_en": 1793157645928,
+      "activa": true
+    },
+    {
+      "session_id": "e18133d3-32a6-4ef2-8150-92ecf7123285",
+      "usuario_id": 1,
+      "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "ip": "::1",
+      "dispositivo": "Navegador Web",
+      "creada_en": "2026-10-27T19:18:14.422Z",
+      "ultima_actividad": "2026-10-27T19:18:14.452Z",
+      "expira_en": 1793157494421,
+      "activa": true
+    },
+    {
+      "session_id": "8235d2c6-cc12-405d-b561-bcadad61043a",
+      "usuario_id": 1,
+      "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "ip": "::1",
+      "dispositivo": "Navegador Web",
+      "creada_en": "2026-10-27T19:11:27.319Z",
+      "ultima_actividad": "2026-10-27T19:11:27.319Z",
+      "expira_en": 1793157087319,
+      "activa": true
+    },
+    {
+      "session_id": "ec52066c-8825-4f70-b10e-c5951b3a6fd1",
+      "usuario_id": 1,
+      "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "ip": "::1",
+      "dispositivo": "Navegador Web",
+      "creada_en": "2026-10-27T19:11:18.600Z",
+      "ultima_actividad": "2026-10-27T19:11:18.606Z",
+      "expira_en": 1793157078597,
+      "activa": false
+    },
+    {
       "session_id": "5303fc48-d086-4412-bdcf-65b01d985ba3",
       "usuario_id": 1,
       "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
@@ -1508,7 +1576,7 @@
       "creada_en": "2026-10-27T14:36:51.313Z",
       "ultima_actividad": "2026-10-27T14:36:51.313Z",
       "expira_en": 1793140611313,
-      "activa": true
+      "activa": false
     },
     {
       "session_id": "6bc9cc7f-9aa9-4ca2-804a-0d56ce2d5c11",
@@ -1521,7 +1589,7 @@
       "creada_en": "2026-10-27T14:36:29.712Z",
       "ultima_actividad": "2026-10-27T14:36:29.718Z",
       "expira_en": 1793140589708,
-      "activa": true
+      "activa": false
     },
     {
       "session_id": "a33ec541-42f8-44e9-8545-5398fa11da78",
@@ -1668,6 +1736,97 @@
     }
   ],
   "audit_logs": [
+    {
+      "id": 132,
+      "fecha_hora": "2026-10-27T19:20:45.928Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "LOGIN_EXITOSO",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Inicio de sesión exitoso (18/18 permisos activos)."
+    },
+    {
+      "id": 131,
+      "fecha_hora": "2026-10-27T19:18:14.452Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "SALIDA_VISITANTE",
+      "modulo": "visitantes",
+      "permiso_evaluado": "visitantes:registrar",
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Salida de visitante Jairo Beltrán (Conductor Tractomula) (Gafete CAM-08 liberado a las 14:18)."
+    },
+    {
+      "id": 130,
+      "fecha_hora": "2026-10-27T19:18:14.441Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "INGRESO_VISITANTE",
+      "modulo": "visitantes",
+      "permiso_evaluado": "visitantes:registrar",
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Ingreso de visitante Jairo Beltrán (Conductor Tractomula) (Transportes y Carga Mamonal S.A.S.) con gafete CAM-08."
+    },
+    {
+      "id": 129,
+      "fecha_hora": "2026-10-27T19:18:14.423Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "LOGIN_EXITOSO",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Inicio de sesión exitoso (18/18 permisos activos)."
+    },
+    {
+      "id": 128,
+      "fecha_hora": "2026-10-27T19:11:27.319Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "LOGIN_EXITOSO",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Inicio de sesión exitoso (18/18 permisos activos)."
+    },
+    {
+      "id": 127,
+      "fecha_hora": "2026-10-27T19:11:27.319Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "SESION_PREVIA_REEMPLAZADA",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Se cerraron 3 sesión(es) previa(s) por política de concurrencia."
+    },
+    {
+      "id": 126,
+      "fecha_hora": "2026-10-27T19:11:18.606Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "LOGIN_EXITOSO",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Inicio de sesión exitoso (18/18 permisos activos)."
+    },
     {
       "id": 125,
       "fecha_hora": "2026-10-27T14:41:05.378Z",
