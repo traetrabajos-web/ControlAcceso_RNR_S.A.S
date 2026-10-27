@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Sistema Integral de Control de Acceso, Asistencia 42h y Cuadrillas — Recuperaciones Naranjo Recycling S.A.S. (Cartagena)",
   "type": "module",
+  "main": "server/server.js",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
