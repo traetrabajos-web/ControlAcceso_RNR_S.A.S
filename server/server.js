@@ -139,10 +139,36 @@ function evaluateAttendanceStatus(horaEntradaHHMM, trabajador, db) {
 // ============================================================================
 const PUERTA_UNICA_ID = 1;
 
-function findWorkerByIdent(db, identificador) {
+async function findWorkerByIdent(db, identificador) {
     const cleanIdent = String(identificador || '').trim().toUpperCase();
     if (!cleanIdent) return null;
+
+    // 1. Si MySQL está activo, buscar directamente en la base de datos MySQL (sentinelpro_iam)
+    if (mysqlDb.isMySqlActive()) {
+        try {
+            const mysqlTrab = await mysqlDb.findTrabajadorByIdent(cleanIdent);
+            if (mysqlTrab) {
+                // Sincronizar en db.trabajadores en memoria
+                const idx = db.trabajadores.findIndex(t => 
+                    Number(t.id) === Number(mysqlTrab.id) || 
+                    String(t.documento).toUpperCase() === String(mysqlTrab.documento).toUpperCase() ||
+                    String(t.codigo_credencial).toUpperCase() === String(mysqlTrab.codigo_credencial).toUpperCase()
+                );
+                if (idx >= 0) {
+                    db.trabajadores[idx] = { ...db.trabajadores[idx], ...mysqlTrab };
+                } else {
+                    db.trabajadores.push(mysqlTrab);
+                }
+                return mysqlTrab;
+            }
+        } catch (e) {
+            console.warn('MySQL findTrabajadorByIdent error:', e.message);
+        }
+    }
+
+    // 2. Fallback a trabajadores en memoria
     return db.trabajadores.find(t =>
+        String(t.id) === cleanIdent ||
         String(t.documento).toUpperCase() === cleanIdent ||
         String(t.codigo_credencial).toUpperCase() === cleanIdent
     ) || null;
@@ -230,7 +256,7 @@ function buildKioskProfile(db, trabajador) {
  * Procesa el registro físico de ENTRADA o SALIDA de un trabajador en una Puerta/Zona.
  * Utilizado tanto por la Consola del Vigilante como por el Terminal Kiosco.
  */
-function processWorkerAccessMovement(db, params) {
+async function processWorkerAccessMovement(db, params) {
     const {
         identificador, // puede ser ID numérico, documento (DNI) o codigo_credencial (EMP-001)
         tipo_movimiento, // 'ENTRADA' | 'SALIDA'
@@ -244,11 +270,7 @@ function processWorkerAccessMovement(db, params) {
     } = params;
 
     const cleanIdent = String(identificador || '').trim().toUpperCase();
-    const trabajador = db.trabajadores.find(t =>
-        String(t.id) === cleanIdent ||
-        String(t.documento).toUpperCase() === cleanIdent ||
-        String(t.codigo_credencial).toUpperCase() === cleanIdent
-    );
+    const trabajador = await findWorkerByIdent(db, cleanIdent);
 
     if (!trabajador) {
         return {
@@ -775,10 +797,7 @@ async function handleRequest(req, res) {
             if (!q) {
                 return sendJson(res, 400, { error: 'Ingresa tu Número de Documento (DNI) o Código de Credencial (ej. EMP-001).' });
             }
-            const trab = db.trabajadores.find(t =>
-                String(t.documento).toUpperCase() === q ||
-                String(t.codigo_credencial).toUpperCase() === q
-            );
+            const trab = await findWorkerByIdent(db, q);
             if (!trab) {
                 return sendJson(res, 404, { error: `No se encontró ningún trabajador registrado con el identificador "${q}".` });
             }
@@ -804,7 +823,7 @@ async function handleRequest(req, res) {
             if (!ident) {
                 return sendJson(res, 400, { error: 'Digita tu número de Cédula de Ciudadanía.' });
             }
-            const trab = findWorkerByIdent(db, ident);
+            const trab = await findWorkerByIdent(db, ident);
             if (!trab) {
                 return sendJson(res, 404, { code: 'WORKER_NOT_FOUND', error: `La cédula ${ident} no está registrada en el padrón de la empresa.` });
             }
@@ -816,10 +835,10 @@ async function handleRequest(req, res) {
             const body = await parseBody(req);
             let tipo = String(body.tipo_movimiento || 'AUTO').toUpperCase();
             if (tipo === 'AUTO') {
-                const trabAuto = findWorkerByIdent(db, body.identificador);
+                const trabAuto = await findWorkerByIdent(db, body.identificador);
                 tipo = trabAuto && trabAuto.ubicacion_actual === 'DENTRO_PLANTA' ? 'SALIDA' : 'ENTRADA';
             }
-            const result = processWorkerAccessMovement(db, {
+            const result = await processWorkerAccessMovement(db, {
                 identificador: body.identificador,
                 tipo_movimiento: tipo,
                 zona_id: body.zona_id || PUERTA_UNICA_ID,
@@ -829,7 +848,7 @@ async function handleRequest(req, res) {
                 operador_nombre: 'Terminal Kiosco Portería',
                 ip
             });
-            const trabResult = findWorkerByIdent(db, body.identificador);
+            const trabResult = await findWorkerByIdent(db, body.identificador);
             if (trabResult) {
                 result.perfil = buildKioskProfile(db, trabResult);
             }
@@ -1316,7 +1335,7 @@ async function handleRequest(req, res) {
             if (!auth) return;
 
             const body = await parseBody(req);
-            const result = processWorkerAccessMovement(db, {
+            const result = await processWorkerAccessMovement(db, {
                 identificador: body.identificador,
                 tipo_movimiento: body.tipo_movimiento || 'ENTRADA',
                 zona_id: body.zona_id || 1,
@@ -1868,8 +1887,17 @@ async function startServer(port = PORT) {
     ensureDb();
     try {
         await mysqlDb.testConnection();
+        if (mysqlDb.isMySqlActive()) {
+            const mysqlTrabs = await mysqlDb.getTrabajadoresFromDb();
+            if (mysqlTrabs && mysqlTrabs.length) {
+                const db = ensureDb();
+                db.trabajadores = mysqlTrabs;
+                saveDb(db);
+                console.log(`📋 Sincronizados ${mysqlTrabs.length} trabajadores oficiales desde MySQL sentinelpro_iam.`);
+            }
+        }
     } catch (e) {
-        console.warn('⚠️  Advertencia: No se pudo verificar conexión inicial a MySQL:', e.message);
+        console.warn('⚠️  Advertencia al conectar o sincronizar trabajadores de MySQL:', e.message);
     }
     const server = http.createServer(handleRequest);
     return new Promise((resolve, reject) => {

@@ -13,6 +13,9 @@ Desktop.ini
 ~$*.xlsx
 
 
+# IDE / Worktrees
+.kilo/
+
 # Logs & temp
 logs/
 *.log
