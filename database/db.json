@@ -603,8 +603,8 @@
       "arl_vigente": true,
       "estado": "ACTIVO",
       "ubicacion_actual": "DENTRO_PLANTA",
-      "ultima_entrada": "2026-10-27 15:17",
-      "ultima_salida": null,
+      "ultima_entrada": "2026-10-27 15:34",
+      "ultima_salida": "2026-10-27 15:19",
       "foto_url": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
       "zonas_autorizadas": [
         1,
@@ -638,6 +638,28 @@
     }
   ],
   "registros_acceso": [
+    {
+      "id": 20,
+      "codigo_movimiento": "ACC-1020",
+      "trabajador_id": 13,
+      "codigo_credencial": "RN-SENA-001",
+      "documento": "1052732445",
+      "trabajador_nombre": "Juan Vega",
+      "departamento": "Administración y Contabilidad",
+      "zona_id": 1,
+      "zona_nombre": "Portería Principal Peatonal (Kiosco Táctil Cédula)",
+      "fecha": "2026-10-27",
+      "hora_entrada": "15:34",
+      "hora_salida": null,
+      "estado_asistencia": "TARDANZA (484m)",
+      "estado_ciclo": "EN_PLANTA",
+      "minutos_trabajados": null,
+      "horas_formateadas": "En curso (En planta)",
+      "metodo_identificacion": "TERMINAL_KIOSCO_PIN",
+      "registrado_por_email": "kiosco@recuperacionesnaranjo.com",
+      "registrado_por_nombre": "Terminal Kiosco Portería",
+      "observacion": "Marcación desde Terminal Kiosco Principal"
+    },
     {
       "id": 19,
       "codigo_movimiento": "ACC-1019",
@@ -1574,6 +1596,19 @@
   ],
   "sesiones_activas": [
     {
+      "session_id": "b8b56e63-7453-4b9e-a72c-a0b65bae103c",
+      "usuario_id": 1,
+      "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "ip": "::1",
+      "dispositivo": "node",
+      "creada_en": "2026-10-27T20:47:45.443Z",
+      "ultima_actividad": "2026-10-27T20:47:45.561Z",
+      "expira_en": 1793162865442,
+      "activa": true
+    },
+    {
       "session_id": "35703974-c9fd-490e-879b-7ec28dc78864",
       "usuario_id": 1,
       "usuario_nombre": "Ing. Carlos Naranjo (Director General)",
@@ -1822,6 +1857,97 @@
     }
   ],
   "audit_logs": [
+    {
+      "id": 144,
+      "fecha_hora": "2026-10-27T20:47:45.571Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "BAJA_TRABAJADOR",
+      "modulo": "trabajadores",
+      "permiso_evaluado": "trabajadores:editar",
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Baja/Eliminación de trabajador: Alfonso CRUD Test (RN-PAT-015) - Trabajador eliminado permanentemente de la base de datos."
+    },
+    {
+      "id": 143,
+      "fecha_hora": "2026-10-27T20:47:45.549Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "EDICION_TRABAJADOR",
+      "modulo": "trabajadores",
+      "permiso_evaluado": "trabajadores:editar",
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Actualizado trabajador Alfonso CRUD Test (RN-PAT-015): Estado=ACTIVO, Zonas=[1,2,3,4,5]."
+    },
+    {
+      "id": 142,
+      "fecha_hora": "2026-10-27T20:47:45.508Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "ALTA_TRABAJADOR",
+      "modulo": "trabajadores",
+      "permiso_evaluado": "trabajadores:crear",
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Alta de trabajador: Alfonso CRUD Test (RN-PAT-015 — Doc: 888777666) sincronizado en MySQL sentinelpro_iam."
+    },
+    {
+      "id": 141,
+      "fecha_hora": "2026-10-27T20:47:45.443Z",
+      "usuario_id": 1,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SUPER_ADMIN",
+      "evento": "LOGIN_EXITOSO",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "Inicio de sesión exitoso (18/18 permisos activos)."
+    },
+    {
+      "id": 140,
+      "fecha_hora": "2026-10-27T20:47:05.936Z",
+      "usuario_id": null,
+      "usuario_email": "anónimo",
+      "rol": "SIN_SESION",
+      "evento": "ACCESO_NO_AUTENTICADO_401",
+      "modulo": "trabajadores",
+      "permiso_evaluado": "trabajadores:crear",
+      "resultado": "DENEGADO",
+      "ip": "::1",
+      "detalle": "POST /api/admin/trabajadores -> Sesión inválida o firma criptográfica expirada."
+    },
+    {
+      "id": 139,
+      "fecha_hora": "2026-10-27T20:47:05.917Z",
+      "usuario_id": null,
+      "usuario_email": "admin@recuperacionesnaranjo.com",
+      "rol": "SIN_SESION",
+      "evento": "LOGIN_FALLIDO",
+      "modulo": "autenticacion",
+      "permiso_evaluado": null,
+      "resultado": "DENEGADO",
+      "ip": "::1",
+      "detalle": "Credenciales inválidas para admin@recuperacionesnaranjo.com."
+    },
+    {
+      "id": 138,
+      "fecha_hora": "2026-10-27T20:34:27.214Z",
+      "usuario_id": null,
+      "usuario_email": "kiosco@recuperacionesnaranjo.com",
+      "rol": "SIN_SESION",
+      "evento": "ENTRADA_TRABAJADOR_REGISTRADA",
+      "modulo": "porteria",
+      "permiso_evaluado": "porteria:registrar",
+      "resultado": "EXITO",
+      "ip": "::1",
+      "detalle": "ENTRADA de Juan Vega (RN-SENA-001) a las 15:34 por Portería Principal Peatonal (Kiosco Táctil Cédula) [TARDANZA (484m)]."
+    },
     {
       "id": 137,
       "fecha_hora": "2026-10-27T20:19:25.863Z",

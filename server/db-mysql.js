@@ -132,6 +132,219 @@ async function updateTrabajadorUbicacion(id, ubicacion, ultimaEntrada = null, ul
     await p.query(query, params);
 }
 
+async function createTrabajadorInDb(trabajador) {
+    const p = getPool();
+    const cleanDoc = String(trabajador.documento || '').trim();
+    const cleanName = String(trabajador.nombre_completo || '').trim();
+    const parts = cleanName.split(/\s+/);
+    const nombres = parts.slice(0, Math.max(1, Math.ceil(parts.length / 2))).join(' ') || cleanName;
+    const apellidos = parts.slice(Math.max(1, Math.ceil(parts.length / 2))).join(' ') || ' ';
+    
+    let cargoId = Number(trabajador.cargo_id);
+    let cargoNombre = trabajador.cargo || 'Ayudante de Patio';
+    let departamento = trabajador.departamento || 'Patio de Operaciones';
+    let tipoPersonal = trabajador.tipo_personal || 'PATIO';
+
+    if (!cargoId) {
+        const [matchedCargos] = await p.query('SELECT id, nombre, tipo_personal FROM cargos WHERE LOWER(nombre) = LOWER(?) LIMIT 1', [cargoNombre]);
+        if (matchedCargos.length > 0) {
+            cargoId = matchedCargos[0].id;
+            cargoNombre = matchedCargos[0].nombre;
+            tipoPersonal = matchedCargos[0].tipo_personal || tipoPersonal;
+        } else {
+            cargoId = 6;
+        }
+    } else {
+        const [cRow] = await p.query('SELECT id, nombre, tipo_personal FROM cargos WHERE id = ?', [cargoId]);
+        if (cRow.length > 0) {
+            cargoNombre = cRow[0].nombre;
+            tipoPersonal = cRow[0].tipo_personal || tipoPersonal;
+        }
+    }
+
+    const turnoId = Number(trabajador.turno_id) || 1;
+    const esCritico = trabajador.es_puesto_critico ? 1 : 0;
+    const arlVigente = trabajador.arl_vigente !== false && trabajador.arl_vigente !== 0 ? 1 : 0;
+    const estado = trabajador.estado || 'ACTIVO';
+    const telefono = trabajador.telefono || '';
+    const email = trabajador.email || '';
+    const fotoUrl = trabajador.foto_url || null;
+
+    let codigoCred = String(trabajador.codigo_credencial || '').trim();
+    if (!codigoCred) {
+        const prefix = tipoPersonal === 'ADMINISTRACION' ? 'RN-ADM' : (tipoPersonal === 'APRENDIZ_SENA' ? 'RN-SENA' : 'RN-PAT');
+        const [maxRow] = await p.query('SELECT MAX(id) as maxId FROM trabajadores');
+        const nextIdNum = (Number(maxRow[0]?.maxId) || 0) + 1;
+        codigoCred = `${prefix}-${String(nextIdNum).padStart(3, '0')}`;
+    }
+
+    const [res] = await p.query(`
+        INSERT INTO trabajadores (
+            codigo_credencial, documento, nombres, apellidos, nombre_completo,
+            cargo_id, cargo, departamento, tipo_personal, es_puesto_critico,
+            turno_id, telefono, email, arl_vigente, estado, ubicacion_actual, foto_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'FUERA_PLANTA', ?)
+    `, [
+        codigoCred, cleanDoc, nombres, apellidos, cleanName,
+        cargoId, cargoNombre, departamento, tipoPersonal, esCritico,
+        turnoId, telefono, email, arlVigente, estado, fotoUrl
+    ]);
+
+    const newId = res.insertId;
+
+    const zonas = Array.isArray(trabajador.zonas_autorizadas) && trabajador.zonas_autorizadas.length > 0
+        ? trabajador.zonas_autorizadas.map(Number)
+        : [1, 2];
+
+    for (const zId of zonas) {
+        if (zId) {
+            await p.query(`
+                INSERT INTO trabajador_zonas_autorizadas (trabajador_id, zona_id, nivel_permiso, asignado_por)
+                VALUES (?, ?, 'PERMITIDO', 'ADMIN_RRHH')
+                ON DUPLICATE KEY UPDATE nivel_permiso = 'PERMITIDO'
+            `, [newId, zId]);
+        }
+    }
+
+    return await findTrabajadorByIdent(newId);
+}
+
+async function updateTrabajadorInDb(id, fields) {
+    const p = getPool();
+    const numId = Number(id);
+    if (!numId) throw new Error('ID de trabajador inválido');
+
+    const updates = [];
+    const params = [];
+
+    if (fields.nombre_completo !== undefined) {
+        const cleanName = String(fields.nombre_completo).trim();
+        const parts = cleanName.split(/\s+/);
+        const nombres = parts.slice(0, Math.max(1, Math.ceil(parts.length / 2))).join(' ') || cleanName;
+        const apellidos = parts.slice(Math.max(1, Math.ceil(parts.length / 2))).join(' ') || ' ';
+        updates.push('nombre_completo = ?', 'nombres = ?', 'apellidos = ?');
+        params.push(cleanName, nombres, apellidos);
+    }
+
+    if (fields.documento !== undefined) {
+        updates.push('documento = ?');
+        params.push(String(fields.documento).trim());
+    }
+
+    if (fields.codigo_credencial !== undefined) {
+        updates.push('codigo_credencial = ?');
+        params.push(String(fields.codigo_credencial).trim());
+    }
+
+    if (fields.cargo_id !== undefined) {
+        updates.push('cargo_id = ?');
+        params.push(Number(fields.cargo_id));
+    }
+
+    if (fields.cargo !== undefined) {
+        updates.push('cargo = ?');
+        params.push(String(fields.cargo).trim());
+    }
+
+    if (fields.departamento !== undefined) {
+        updates.push('departamento = ?');
+        params.push(String(fields.departamento).trim());
+    }
+
+    if (fields.tipo_personal !== undefined) {
+        updates.push('tipo_personal = ?');
+        params.push(fields.tipo_personal);
+    }
+
+    if (fields.es_puesto_critico !== undefined) {
+        updates.push('es_puesto_critico = ?');
+        params.push(fields.es_puesto_critico ? 1 : 0);
+    }
+
+    if (fields.turno_id !== undefined) {
+        updates.push('turno_id = ?');
+        params.push(Number(fields.turno_id));
+    }
+
+    if (fields.telefono !== undefined) {
+        updates.push('telefono = ?');
+        params.push(String(fields.telefono).trim());
+    }
+
+    if (fields.email !== undefined) {
+        updates.push('email = ?');
+        params.push(String(fields.email).trim());
+    }
+
+    if (fields.arl_vigente !== undefined) {
+        updates.push('arl_vigente = ?');
+        params.push(fields.arl_vigente ? 1 : 0);
+    }
+
+    if (fields.estado !== undefined) {
+        updates.push('estado = ?');
+        params.push(fields.estado);
+    }
+
+    if (fields.foto_url !== undefined) {
+        updates.push('foto_url = ?');
+        params.push(fields.foto_url);
+    }
+
+    if (updates.length > 0) {
+        params.push(numId);
+        await p.query(`UPDATE trabajadores SET ${updates.join(', ')} WHERE id = ?`, params);
+    }
+
+    if (Array.isArray(fields.zonas_autorizadas)) {
+        await p.query('DELETE FROM trabajador_zonas_autorizadas WHERE trabajador_id = ?', [numId]);
+        for (const zId of fields.zonas_autorizadas) {
+            const numZ = Number(zId);
+            if (numZ) {
+                await p.query(`
+                    INSERT INTO trabajador_zonas_autorizadas (trabajador_id, zona_id, nivel_permiso, asignado_por)
+                    VALUES (?, ?, 'PERMITIDO', 'ADMIN_RRHH')
+                `, [numId, numZ]);
+            }
+        }
+    }
+
+    return await findTrabajadorByIdent(numId);
+}
+
+async function deleteTrabajadorInDb(id) {
+    const p = getPool();
+    const numId = Number(id);
+    if (!numId) throw new Error('ID de trabajador inválido');
+
+    const [regs] = await p.query('SELECT COUNT(*) as total FROM registros_acceso WHERE trabajador_id = ?', [numId]);
+    const totalRegs = Number(regs[0]?.total) || 0;
+
+    const [jornadas] = await p.query('SELECT COUNT(*) as total FROM jornadas_liquidadas_diarias WHERE trabajador_id = ?', [numId]);
+    const totalJornadas = Number(jornadas[0]?.total) || 0;
+
+    if (totalRegs > 0 || totalJornadas > 0) {
+        await p.query(`
+            UPDATE trabajadores 
+            SET estado = 'INACTIVO', ubicacion_actual = 'FUERA_PLANTA' 
+            WHERE id = ?
+        `, [numId]);
+        await p.query('DELETE FROM trabajador_zonas_autorizadas WHERE trabajador_id = ?', [numId]);
+        return {
+            action: 'SOFT_DELETE',
+            message: `El trabajador tiene historial de asistencia (${totalRegs} registros). Se cambió su estado a INACTIVO y se revocaron todas las zonas de acceso.`
+        };
+    } else {
+        await p.query('DELETE FROM trabajador_zonas_autorizadas WHERE trabajador_id = ?', [numId]);
+        await p.query('DELETE FROM autorizaciones_extras_patio WHERE trabajador_id = ?', [numId]);
+        await p.query('DELETE FROM trabajadores WHERE id = ?', [numId]);
+        return {
+            action: 'HARD_DELETE',
+            message: 'Trabajador eliminado permanentemente de la base de datos.'
+        };
+    }
+}
+
 // ---------------------------------------------------------------------------
 // REGISTROS DE ACCESO (FICHAJES KIOSCO Y PORTERÍA)
 // ---------------------------------------------------------------------------
@@ -486,6 +699,9 @@ module.exports = {
     getTrabajadoresFromDb,
     findTrabajadorByIdent,
     updateTrabajadorUbicacion,
+    createTrabajadorInDb,
+    updateTrabajadorInDb,
+    deleteTrabajadorInDb,
     getRegistrosAccesoFromDb,
     createRegistroAccesoInDb,
     updateRegistroAccesoSalidaInDb,

@@ -216,6 +216,20 @@
 
         <!-- WORKSPACE PRINCIPAL DEL PANEL (Una vez autenticado) -->
         <div id="admin-workspace" class="workspace-layout hidden">
+            <!-- Barra Superior Móvil para Admin Panel -->
+            <div class="admin-mobile-header">
+                <button class="btn-sidebar-toggle" onclick="toggleSidebarMenu()" aria-label="Abrir Menú">
+                    ☰ <span>Menú Panel</span>
+                </button>
+                <div class="admin-mobile-title">
+                    <span class="brand-text">SentinelPro IAM</span>
+                </div>
+                <div class="admin-mobile-user">
+                    <span class="badge-role" id="mobile-user-role">ROL</span>
+                </div>
+            </div>
+            <div id="sidebar-backdrop" class="sidebar-backdrop hidden" onclick="toggleSidebarMenu(true)"></div>
+
             <!-- Sidebar Lateral -->
             <aside class="sidebar">
                 <div class="user-profile-badge">
@@ -918,7 +932,7 @@
     <div id="modal-new-worker" class="modal-overlay hidden">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>➕ Dar de Alta Trabajador</h3>
+                <h3>➕ Dar de Alta Trabajador (Padrón Oficial)</h3>
                 <button class="close-btn" onclick="closeNewWorkerModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -933,17 +947,31 @@
                     </div>
                     <div class="form-group flex-1">
                         <label>Código Credencial (Opcional)</label>
-                        <input type="text" id="mw-code" class="input-std" placeholder="Auto o EMP-009">
+                        <input type="text" id="mw-code" class="input-std" placeholder="Auto o RN-PAT-015">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group flex-1">
                         <label>Cargo</label>
-                        <input type="text" id="mw-cargo" class="input-std" placeholder="Ej: Operador de Envasado">
+                        <input type="text" id="mw-cargo" class="input-std" placeholder="Ej: Ayudante de Patio">
                     </div>
                     <div class="form-group flex-1">
                         <label>Departamento</label>
-                        <input type="text" id="mw-depto" class="input-std" placeholder="Ej: Operaciones y Planta">
+                        <input type="text" id="mw-depto" class="input-std" placeholder="Ej: Patio de Operaciones">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Tipo de Personal</label>
+                        <select id="mw-tipo" class="input-std">
+                            <option value="PATIO">🚜 Personal Operativo de Patio</option>
+                            <option value="ADMINISTRACION">🏢 Personal Administrativo</option>
+                            <option value="APRENDIZ_SENA">🎓 Aprendiz SENA</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Teléfono</label>
+                        <input type="text" id="mw-tel" class="input-std" placeholder="Ej: 3001234567">
                     </div>
                 </div>
                 <div class="form-row">
@@ -964,8 +992,108 @@
                     <div id="mw-zones-checkboxes" class="checkbox-grid"></div>
                 </div>
                 <button class="btn btn-primary btn-block" onclick="saveNewWorker()">
-                    💾 Guardar y Emitir Credencial
+                    💾 Guardar y Emitir Credencial en MySQL
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR TRABAJADOR (CRUD - UPDATE) -->
+    <div id="modal-edit-worker" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✏️ Editar Trabajador y Permisos de Acceso</h3>
+                <button class="close-btn" onclick="closeEditWorkerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mew-id">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="mew-name" class="input-std" placeholder="Ej: Marcos Aurelio Gómez">
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Número de Documento / Cédula</label>
+                        <input type="text" id="mew-doc" class="input-std" placeholder="Ej: 10482910">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Código Credencial</label>
+                        <input type="text" id="mew-code" class="input-std" placeholder="RN-PAT-001">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Cargo</label>
+                        <input type="text" id="mew-cargo" class="input-std" placeholder="Ej: Jefe de Patio">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Departamento</label>
+                        <input type="text" id="mew-depto" class="input-std" placeholder="Ej: Patio de Operaciones">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Tipo de Personal</label>
+                        <select id="mew-tipo" class="input-std">
+                            <option value="PATIO">🚜 Personal Operativo de Patio</option>
+                            <option value="ADMINISTRACION">🏢 Personal Administrativo</option>
+                            <option value="APRENDIZ_SENA">🎓 Aprendiz SENA</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Turno Laboral</label>
+                        <select id="mew-turno" class="input-std"></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Teléfono de Contacto</label>
+                        <input type="text" id="mew-tel" class="input-std" placeholder="Ej: 3001234567">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Correo Electrónico (Opcional)</label>
+                        <input type="email" id="mew-email" class="input-std" placeholder="correo@rnr.com.co">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>Estado del Trabajador</label>
+                        <select id="mew-estado" class="input-std">
+                            <option value="ACTIVO">✅ ACTIVO (Permitir Ingreso)</option>
+                            <option value="SUSPENDIDO">⏸️ SUSPENDIDO (Bloqueo Preventivo)</option>
+                            <option value="INACTIVO">⛔ INACTIVO (Retirado / Desvinculado)</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Seguridad Social & ARL</label>
+                        <select id="mew-arl" class="input-std">
+                            <option value="1">🛡️ ARL Vigente (Sura / Positiva)</option>
+                            <option value="0">⚠️ ARL Vencida / No Afiliado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;margin-bottom:8px;">
+                        <input type="checkbox" id="mew-critico" value="1">
+                        <span>⚠️ Puesto Crítico de Seguridad (Requiere EPP específico en patio)</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Zonas / Puertas Físicas Autorizadas:</label>
+                    <div id="mew-zones-checkboxes" class="checkbox-grid"></div>
+                </div>
+                <div class="form-row" style="margin-top:16px;">
+                    <div class="form-group flex-1">
+                        <button class="btn btn-outline-light btn-block" onclick="closeEditWorkerModal()">
+                            Cancelar
+                        </button>
+                    </div>
+                    <div class="form-group flex-2">
+                        <button class="btn btn-primary btn-block" onclick="saveEditWorker()">
+                            💾 Guardar Cambios en Base de Datos
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

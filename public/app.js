@@ -787,6 +787,11 @@ function applyUserNavigationPermissions() {
     // Perfil en el Sidebar
     document.getElementById('sidebar-user-name').textContent = CURRENT_USER.nombre_completo;
     document.getElementById('sidebar-user-role').textContent = CURRENT_USER.rol_nombre || CURRENT_USER.rol;
+    const mobRole = document.getElementById('mobile-user-role');
+    if (mobRole) {
+        mobRole.textContent = CURRENT_USER.rol_nombre || CURRENT_USER.rol;
+        mobRole.style.backgroundColor = CURRENT_USER.rol_color || '#3730a3';
+    }
     document.getElementById('sidebar-user-role').style.backgroundColor = CURRENT_USER.rol_color || '#3730a3';
     document.getElementById('sidebar-avatar').textContent = (CURRENT_USER.nombre_completo || 'U')[0].toUpperCase();
     document.getElementById('sidebar-perm-count').textContent = `${CURRENT_USER.permisos_lista?.length || 0} permisos activos`;
@@ -816,6 +821,7 @@ function applyUserNavigationPermissions() {
 }
 
 function showTab(tabId) {
+    if (typeof toggleSidebarMenu === "function") toggleSidebarMenu(true);
     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
     document.querySelectorAll('.nav-tab-btn').forEach(tb => tb.classList.remove('active'));
 
@@ -1101,30 +1107,71 @@ function exportAttendanceCsv() {
     document.body.removeChild(link);
 }
 
-// TAB 4: Trabajadores (RR.HH.)
+// TAB 4: Trabajadores (RR.HH. CRUD COMPLETO)
+function escapeWorkerStr(str) {
+    return String(str || '').replace(/'/g, "\\'");
+}
+
 function renderWorkersCrudTable(trabajadores) {
     const tbody = document.querySelector('#table-workers-crud tbody');
     if (!trabajadores.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b;">No hay trabajadores dados de alta.</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#64748b;padding:24px;">No hay trabajadores registrados en la base de datos.</td></tr>';
         return;
     }
 
     tbody.innerHTML = trabajadores.map(t => {
         const isActivo = t.estado === 'ACTIVO';
+        const isSuspendido = t.estado === 'SUSPENDIDO';
+        
+        let estadoBadge = '<span class="badge badge-success">ACTIVO</span>';
+        if (isSuspendido) estadoBadge = '<span class="badge badge-warning">SUSPENDIDO</span>';
+        if (t.estado === 'INACTIVO') estadoBadge = '<span class="badge badge-danger">INACTIVO</span>';
+
         const toggleBtn = isActivo 
-            ? `<button class="btn btn-warning btn-sm" onclick="toggleWorkerStatus(${t.id}, 'SUSPENDIDO')">⏸️ Suspender Acceso</button>`
-            : `<button class="btn btn-success btn-sm" onclick="toggleWorkerStatus(${t.id}, 'ACTIVO')">▶️ Reactivar</button>`;
+            ? `<button class="btn btn-warning btn-sm" title="Suspender acceso temporalmente" onclick="toggleWorkerStatus(${t.id}, 'SUSPENDIDO')">⏸️ Suspender</button>`
+            : `<button class="btn btn-success btn-sm" title="Reactivar acceso" onclick="toggleWorkerStatus(${t.id}, 'ACTIVO')">▶️ Reactivar</button>`;
+
+        const editBtn = `<button class="btn btn-primary btn-sm" title="Editar trabajador" onclick="openEditWorkerModal(${t.id})">✏️ Editar</button>`;
+        const deleteBtn = `<button class="btn btn-danger btn-sm" title="Eliminar o archivar" onclick="deleteWorkerPrompt(${t.id}, '${escapeWorkerStr(t.nombre_completo)}')">🗑️</button>`;
+
+        const tipoBadge = t.tipo_personal === 'PATIO' 
+            ? '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">🚜 PATIO</span>'
+            : (t.tipo_personal === 'APRENDIZ_SENA'
+                ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe;">🎓 SENA</span>'
+                : '<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;">🏢 ADMIN</span>');
+
+        const arlBadge = (t.arl_vigente !== false && t.arl_vigente !== 0)
+            ? '<span style="font-size:0.75rem;color:#16a34a;display:block;">🛡️ ARL Vigente</span>'
+            : '<span style="font-size:0.75rem;color:#dc2626;display:block;font-weight:600;">⚠️ ARL Vencida</span>';
+
+        const criticoBadge = t.es_puesto_critico
+            ? '<span style="font-size:0.72rem;background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-weight:600;display:inline-block;margin-top:2px;">⚠️ Crítico</span>'
+            : '';
 
         return `
             <tr>
                 <td><strong>${t.codigo_credencial}</strong></td>
                 <td>${t.documento}</td>
-                <td>${t.nombre_completo}</td>
-                <td>${t.cargo} <br><small style="color:#64748b;">${t.departamento}</small></td>
+                <td>
+                    <div style="font-weight:600;color:#0f172a;">${t.nombre_completo}</div>
+                    ${arlBadge}
+                    ${criticoBadge}
+                </td>
+                <td>
+                    <div style="font-weight:500;">${t.cargo}</div>
+                    <small style="color:#64748b;">${t.departamento}</small>
+                    <div style="margin-top:3px;">${tipoBadge}</div>
+                </td>
                 <td>Turno ${t.turno_id || 1}</td>
                 <td>Puertas: [${(t.zonas_autorizadas || []).join(', ')}]</td>
-                <td>${isActivo ? '<span class="badge badge-success">ACTIVO</span>' : '<span class="badge badge-danger">SUSPENDIDO</span>'}</td>
-                <td>${toggleBtn}</td>
+                <td>${estadoBadge}</td>
+                <td>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+                        ${editBtn}
+                        ${toggleBtn}
+                        ${deleteBtn}
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');
@@ -1182,6 +1229,8 @@ async function saveNewWorker() {
     const code = document.getElementById('mw-code').value.trim();
     const cargo = document.getElementById('mw-cargo').value.trim();
     const depto = document.getElementById('mw-depto').value.trim();
+    const tipo = document.getElementById('mw-tipo') ? document.getElementById('mw-tipo').value : 'PATIO';
+    const tel = document.getElementById('mw-tel') ? document.getElementById('mw-tel').value.trim() : '';
     const turnoId = document.getElementById('mw-turno').value;
     const estado = document.getElementById('mw-estado').value;
 
@@ -1203,8 +1252,10 @@ async function saveNewWorker() {
                 nombre_completo: name,
                 documento: doc,
                 codigo_credencial: code || undefined,
-                cargo,
-                departamento: depto,
+                cargo: cargo || 'Ayudante de Patio',
+                departamento: depto || 'Patio de Operaciones',
+                tipo_personal: tipo,
+                telefono: tel,
                 turno_id: turnoId,
                 zonas_autorizadas: selectedZones,
                 estado
@@ -1221,6 +1272,162 @@ async function saveNewWorker() {
         }
     } catch {
         alert('Error de conexión.');
+    }
+}
+
+// Modal Editar Trabajador (CRUD - UPDATE)
+function openEditWorkerModal(id) {
+    if (!DASHBOARD_DATA || !DASHBOARD_DATA.trabajadores) return;
+    const t = DASHBOARD_DATA.trabajadores.find(w => Number(w.id) === Number(id));
+    if (!t) {
+        alert('Trabajador no encontrado.');
+        return;
+    }
+
+    document.getElementById('mew-id').value = t.id;
+    document.getElementById('mew-name').value = t.nombre_completo || '';
+    document.getElementById('mew-doc').value = t.documento || '';
+    document.getElementById('mew-code').value = t.codigo_credencial || '';
+    document.getElementById('mew-cargo').value = t.cargo || '';
+    document.getElementById('mew-depto').value = t.departamento || '';
+    document.getElementById('mew-tipo').value = t.tipo_personal || 'PATIO';
+    document.getElementById('mew-tel').value = t.telefono || '';
+    document.getElementById('mew-email').value = t.email || '';
+    document.getElementById('mew-estado').value = t.estado || 'ACTIVO';
+    document.getElementById('mew-arl').value = (t.arl_vigente !== false && t.arl_vigente !== 0) ? '1' : '0';
+    document.getElementById('mew-critico').checked = !!t.es_puesto_critico;
+
+    // Poblar turnos
+    const selTurno = document.getElementById('mew-turno');
+    selTurno.innerHTML = (DASHBOARD_DATA.turnos_laborales || []).map(tn => `
+        <option value="${tn.id}" ${Number(t.turno_id) === Number(tn.id) ? 'selected' : ''}>
+            ${tn.nombre} (${tn.hora_entrada} - ${tn.hora_salida})
+        </option>
+    `).join('');
+
+    // Poblar zonas autorizadas con check segun t.zonas_autorizadas
+    const userZones = Array.isArray(t.zonas_autorizadas) ? t.zonas_autorizadas.map(Number) : [1];
+    const chkZonas = document.getElementById('mew-zones-checkboxes');
+    chkZonas.innerHTML = (DASHBOARD_DATA.zonas_acceso || []).map(z => {
+        const isChecked = userZones.includes(Number(z.id)) ? 'checked' : '';
+        return `
+            <label class="checkbox-item">
+                <input type="checkbox" name="mew_zone" value="${z.id}" ${isChecked}>
+                <span>${z.codigo} (${z.nombre.split('(')[0]})</span>
+            </label>
+        `;
+    }).join('');
+
+    document.getElementById('modal-edit-worker').classList.remove('hidden');
+}
+
+function closeEditWorkerModal() {
+    document.getElementById('modal-edit-worker').classList.add('hidden');
+}
+
+async function saveEditWorker() {
+    const id = document.getElementById('mew-id').value;
+    const name = document.getElementById('mew-name').value.trim();
+    const doc = document.getElementById('mew-doc').value.trim();
+    const code = document.getElementById('mew-code').value.trim();
+    const cargo = document.getElementById('mew-cargo').value.trim();
+    const depto = document.getElementById('mew-depto').value.trim();
+    const tipo = document.getElementById('mew-tipo').value;
+    const tel = document.getElementById('mew-tel').value.trim();
+    const email = document.getElementById('mew-email').value.trim();
+    const turnoId = Number(document.getElementById('mew-turno').value) || 1;
+    const estado = document.getElementById('mew-estado').value;
+    const arlVigente = document.getElementById('mew-arl').value === '1';
+    const esCritico = document.getElementById('mew-critico').checked;
+
+    const selectedZones = Array.from(document.querySelectorAll('input[name="mew_zone"]:checked')).map(cb => Number(cb.value));
+
+    if (!name || !doc) {
+        alert('El nombre completo y el documento son obligatorios.');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/admin/trabajadores/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${AUTH_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                nombre_completo: name,
+                documento: doc,
+                codigo_credencial: code,
+                cargo,
+                departamento: depto,
+                tipo_personal: tipo,
+                telefono: tel,
+                email,
+                turno_id: turnoId,
+                estado,
+                arl_vigente: arlVigente,
+                es_puesto_critico: esCritico,
+                zonas_autorizadas: selectedZones
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.mensaje || 'Trabajador actualizado exitosamente en MySQL.');
+            closeEditWorkerModal();
+            loadAdminDashboardData();
+        } else {
+            alert(data.error || 'Error al actualizar trabajador.');
+        }
+    } catch (err) {
+        alert('Error de conexión con el servidor.');
+    }
+}
+
+// Eliminar o Dar de Baja Trabajador (CRUD - DELETE)
+async function deleteWorkerPrompt(id, name) {
+    const msg = '¿Está seguro de eliminar o dar de baja al trabajador ' + name + ' de la empresa?\n\n' +
+                '• Si no tiene registros previos de marcaciones en planta, se eliminará permanentemente de MySQL.\n' +
+                '• Si cuenta con asistencias registradas, el sistema protegerá la integridad legal archivándolo como INACTIVO y bloqueando su acceso en portería.';
+
+    if (!confirm(msg)) return;
+
+    try {
+        const res = await fetch(`/api/admin/trabajadores/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${AUTH_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.mensaje || 'Operación completada exitosamente.');
+            loadAdminDashboardData();
+        } else {
+            alert(data.error || 'No se pudo eliminar el trabajador.');
+        }
+    } catch {
+        alert('Error de conexión con el servidor.');
+    }
+}
+
+// Control Menú Responsive Sidebar
+function toggleSidebarMenu(forceClose = false) {
+    const sidebar = document.querySelector('.sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (!sidebar) return;
+
+    if (forceClose) {
+        sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.add('hidden');
+    } else {
+        const isOpen = sidebar.classList.toggle('open');
+        if (backdrop) {
+            if (isOpen) backdrop.classList.remove('hidden');
+            else backdrop.classList.add('hidden');
+        }
     }
 }
 

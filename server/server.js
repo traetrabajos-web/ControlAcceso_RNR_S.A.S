@@ -1350,7 +1350,7 @@ async function handleRequest(req, res) {
             return sendJson(res, result.status, result);
         }
 
-        // Registrar Nuevo Trabajador en Padrón (RR.HH.)
+        // Registrar Nuevo Trabajador en Padrón (RR.HH. CRUD - CREATE)
         if (req.method === 'POST' && pathname === '/api/admin/trabajadores') {
             const auth = authorizeAction(req, res, db, 'trabajadores:crear', 'trabajadores');
             if (!auth) return;
@@ -1365,27 +1365,57 @@ async function handleRequest(req, res) {
                 return sendJson(res, 409, { error: `Ya existe un trabajador registrado con el documento ${docClean}.` });
             }
 
-            const id = nextId(db.trabajadores);
-            const codigoCred = body.codigo_credencial || `EMP-${String(id).padStart(3, '0')}`;
-            const nuevoTrabajador = {
-                id,
-                codigo_credencial: codigoCred,
-                documento: docClean,
-                nombre_completo: String(body.nombre_completo).trim(),
-                cargo: body.cargo || 'Operador de Planta',
-                departamento: body.departamento || 'Operaciones y Planta',
-                telefono: body.telefono || '',
-                email: body.email || '',
-                turno_id: Number(body.turno_id) || 1,
-                zonas_autorizadas: Array.isArray(body.zonas_autorizadas) && body.zonas_autorizadas.length
-                    ? body.zonas_autorizadas.map(Number)
-                    : [1, 2],
-                placa_vehiculo: body.placa_vehiculo || '',
-                estado: body.estado || 'ACTIVO',
-                ubicacion_actual: 'FUERA_PLANTA',
-                ultima_puerta_id: 1,
-                ultima_entrada: 'Sin marcaciones previas'
-            };
+            let nuevoTrabajador = null;
+
+            if (mysqlDb.isMySqlActive()) {
+                try {
+                    nuevoTrabajador = await mysqlDb.createTrabajadorInDb({
+                        nombre_completo: String(body.nombre_completo).trim(),
+                        documento: docClean,
+                        codigo_credencial: body.codigo_credencial,
+                        cargo_id: body.cargo_id,
+                        cargo: body.cargo || 'Ayudante de Patio',
+                        departamento: body.departamento || 'Patio de Operaciones',
+                        tipo_personal: body.tipo_personal || 'PATIO',
+                        es_puesto_critico: body.es_puesto_critico,
+                        turno_id: Number(body.turno_id) || 1,
+                        telefono: body.telefono || '',
+                        email: body.email || '',
+                        arl_vigente: body.arl_vigente !== undefined ? body.arl_vigente : true,
+                        estado: body.estado || 'ACTIVO',
+                        zonas_autorizadas: Array.isArray(body.zonas_autorizadas) && body.zonas_autorizadas.length ? body.zonas_autorizadas : [1, 2],
+                        foto_url: body.foto_url || null
+                    });
+                } catch (sqlErr) {
+                    console.error('Error insertando trabajador en MySQL:', sqlErr.message);
+                    return sendJson(res, 500, { error: `Error en base de datos: ${sqlErr.message}` });
+                }
+            }
+
+            if (!nuevoTrabajador) {
+                const id = nextId(db.trabajadores);
+                const codigoCred = body.codigo_credencial || `EMP-${String(id).padStart(3, '0')}`;
+                nuevoTrabajador = {
+                    id,
+                    codigo_credencial: codigoCred,
+                    documento: docClean,
+                    nombre_completo: String(body.nombre_completo).trim(),
+                    cargo: body.cargo || 'Ayudante de Patio',
+                    departamento: body.departamento || 'Patio de Operaciones',
+                    tipo_personal: body.tipo_personal || 'PATIO',
+                    telefono: body.telefono || '',
+                    email: body.email || '',
+                    turno_id: Number(body.turno_id) || 1,
+                    zonas_autorizadas: Array.isArray(body.zonas_autorizadas) && body.zonas_autorizadas.length
+                        ? body.zonas_autorizadas.map(Number)
+                        : [1, 2],
+                    placa_vehiculo: body.placa_vehiculo || '',
+                    estado: body.estado || 'ACTIVO',
+                    ubicacion_actual: 'FUERA_PLANTA',
+                    ultima_puerta_id: 1,
+                    ultima_entrada: 'Sin marcaciones previas'
+                };
+            }
 
             db.trabajadores.push(nuevoTrabajador);
             recordAuditLog(db, {
@@ -1397,36 +1427,56 @@ async function handleRequest(req, res) {
                 permiso_evaluado: 'trabajadores:crear',
                 resultado: 'EXITO',
                 ip,
-                detalle: `Alta de trabajador: ${nuevoTrabajador.nombre_completo} (${nuevoTrabajador.codigo_credencial} — Doc: ${nuevoTrabajador.documento}).`
+                detalle: `Alta de trabajador: ${nuevoTrabajador.nombre_completo} (${nuevoTrabajador.codigo_credencial} — Doc: ${nuevoTrabajador.documento}) sincronizado en MySQL sentinelpro_iam.`
             });
             saveDb(db);
 
             return sendJson(res, 201, {
-                mensaje: `Trabajador ${nuevoTrabajador.nombre_completo} registrado con credencial ${nuevoTrabajador.codigo_credencial}.`,
+                mensaje: `Trabajador ${nuevoTrabajador.nombre_completo} registrado exitosamente con credencial ${nuevoTrabajador.codigo_credencial}.`,
                 trabajador: nuevoTrabajador
             });
         }
 
-        // Editar Trabajador, Turno, Zonas Autorizadas o Suspender/Activar Credencial
+        // Editar Trabajador, Turno, Zonas Autorizadas o Suspender/Activar Credencial (CRUD - UPDATE)
         if (req.method === 'PUT' && pathname.startsWith('/api/admin/trabajadores/')) {
             const auth = authorizeAction(req, res, db, 'trabajadores:editar', 'trabajadores');
             if (!auth) return;
 
             const id = Number(pathname.split('/')[4]);
-            const trab = db.trabajadores.find(t => Number(t.id) === id);
-            if (!trab) return sendJson(res, 404, { error: 'Trabajador no encontrado.' });
+            const trabIndex = db.trabajadores.findIndex(t => Number(t.id) === id);
+            if (trabIndex === -1) return sendJson(res, 404, { error: 'Trabajador no encontrado.' });
 
+            const trab = db.trabajadores[trabIndex];
             const body = await parseBody(req);
-            if (body.nombre_completo !== undefined) trab.nombre_completo = String(body.nombre_completo).trim();
-            if (body.documento !== undefined) trab.documento = String(body.documento).trim();
-            if (body.cargo !== undefined) trab.cargo = String(body.cargo).trim();
-            if (body.departamento !== undefined) trab.departamento = String(body.departamento).trim();
-            if (body.telefono !== undefined) trab.telefono = String(body.telefono).trim();
-            if (body.turno_id !== undefined) trab.turno_id = Number(body.turno_id);
-            if (Array.isArray(body.zonas_autorizadas)) trab.zonas_autorizadas = body.zonas_autorizadas.map(Number);
-            if (body.placa_vehiculo !== undefined) trab.placa_vehiculo = String(body.placa_vehiculo).trim();
-            if (body.estado !== undefined) trab.estado = body.estado;
 
+            if (mysqlDb.isMySqlActive()) {
+                try {
+                    const updatedMysql = await mysqlDb.updateTrabajadorInDb(id, body);
+                    if (updatedMysql) {
+                        db.trabajadores[trabIndex] = { ...trab, ...updatedMysql };
+                    }
+                } catch (sqlErr) {
+                    console.error('Error actualizando trabajador en MySQL:', sqlErr.message);
+                    return sendJson(res, 500, { error: `Error en base de datos: ${sqlErr.message}` });
+                }
+            } else {
+                if (body.nombre_completo !== undefined) trab.nombre_completo = String(body.nombre_completo).trim();
+                if (body.documento !== undefined) trab.documento = String(body.documento).trim();
+                if (body.cargo !== undefined) trab.cargo = String(body.cargo).trim();
+                if (body.cargo_id !== undefined) trab.cargo_id = Number(body.cargo_id);
+                if (body.departamento !== undefined) trab.departamento = String(body.departamento).trim();
+                if (body.tipo_personal !== undefined) trab.tipo_personal = body.tipo_personal;
+                if (body.es_puesto_critico !== undefined) trab.es_puesto_critico = !!body.es_puesto_critico;
+                if (body.telefono !== undefined) trab.telefono = String(body.telefono).trim();
+                if (body.email !== undefined) trab.email = String(body.email).trim();
+                if (body.arl_vigente !== undefined) trab.arl_vigente = !!body.arl_vigente;
+                if (body.turno_id !== undefined) trab.turno_id = Number(body.turno_id);
+                if (Array.isArray(body.zonas_autorizadas)) trab.zonas_autorizadas = body.zonas_autorizadas.map(Number);
+                if (body.placa_vehiculo !== undefined) trab.placa_vehiculo = String(body.placa_vehiculo).trim();
+                if (body.estado !== undefined) trab.estado = body.estado;
+            }
+
+            const currentTrab = db.trabajadores[trabIndex];
             recordAuditLog(db, {
                 usuario_id: auth.user.id,
                 usuario_email: auth.user.email,
@@ -1436,13 +1486,62 @@ async function handleRequest(req, res) {
                 permiso_evaluado: 'trabajadores:editar',
                 resultado: 'EXITO',
                 ip,
-                detalle: `Actualizado trabajador ${trab.nombre_completo} (${trab.codigo_credencial}): Estado=${trab.estado}, Zonas=[${trab.zonas_autorizadas.join(',')}].`
+                detalle: `Actualizado trabajador ${currentTrab.nombre_completo} (${currentTrab.codigo_credencial}): Estado=${currentTrab.estado}, Zonas=[${(currentTrab.zonas_autorizadas || []).join(',')}].`
             });
             saveDb(db);
 
             return sendJson(res, 200, {
-                mensaje: `Datos y permisos físicos de ${trab.nombre_completo} actualizados.`,
-                trabajador: trab
+                mensaje: `Datos y permisos de ${currentTrab.nombre_completo} actualizados correctamente en MySQL.`,
+                trabajador: currentTrab
+            });
+        }
+
+        // Eliminar o Archivar Trabajador (CRUD - DELETE)
+        if (req.method === 'DELETE' && pathname.startsWith('/api/admin/trabajadores/')) {
+            const auth = authorizeAction(req, res, db, 'trabajadores:editar', 'trabajadores');
+            if (!auth) return;
+
+            const id = Number(pathname.split('/')[4]);
+            const trabIndex = db.trabajadores.findIndex(t => Number(t.id) === id);
+            if (trabIndex === -1) return sendJson(res, 404, { error: 'Trabajador no encontrado.' });
+
+            const trab = db.trabajadores[trabIndex];
+            let deleteResult = { action: 'HARD_DELETE', message: 'Trabajador eliminado.' };
+
+            if (mysqlDb.isMySqlActive()) {
+                try {
+                    deleteResult = await mysqlDb.deleteTrabajadorInDb(id);
+                } catch (sqlErr) {
+                    console.error('Error eliminando trabajador en MySQL:', sqlErr.message);
+                    return sendJson(res, 500, { error: `Error en base de datos: ${sqlErr.message}` });
+                }
+            }
+
+            if (deleteResult.action === 'SOFT_DELETE') {
+                trab.estado = 'INACTIVO';
+                trab.zonas_autorizadas = [];
+            } else {
+                db.trabajadores.splice(trabIndex, 1);
+            }
+
+            recordAuditLog(db, {
+                usuario_id: auth.user.id,
+                usuario_email: auth.user.email,
+                rol: auth.permisos_efectivos.rol_codigo,
+                evento: 'BAJA_TRABAJADOR',
+                modulo: 'trabajadores',
+                permiso_evaluado: 'trabajadores:editar',
+                resultado: 'EXITO',
+                ip,
+                detalle: `Baja/Eliminación de trabajador: ${trab.nombre_completo} (${trab.codigo_credencial}) - ${deleteResult.message}`
+            });
+            saveDb(db);
+
+            return sendJson(res, 200, {
+                ok: true,
+                action: deleteResult.action,
+                mensaje: deleteResult.message,
+                trabajador_id: id
             });
         }
 
