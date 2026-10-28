@@ -103,6 +103,7 @@ export interface Visitante {
   nombre_completo: string;
   documento: string;
   empresa_origen: string;
+  tipo_persona?: 'VISITANTE' | 'CONTRATISTA' | 'PROVEEDOR' | 'AUDITOR';
   placa_vehiculo: string;
   motivo_visita: string;
   anfitrion_visitado: string;
@@ -114,12 +115,29 @@ export interface Visitante {
   hora_salida: string | null;
   estado: 'DENTRO' | 'SALIO';
   registrado_por_email: string;
-  // Weigh scale & manifest details
+  induccion_sst?: boolean;
+  arl_empresa?: string;
+  arl_vigente?: boolean;
+  equipos_ingresados?: string;
+  telefono_contacto?: string;
+  observaciones?: string;
+  // Backward compatibility fields if referenced
   tipo_material?: string;
   peso_bruto_kg?: number;
   peso_tara_kg?: number;
   peso_neto_kg?: number;
-  induccion_sst?: boolean;
+}
+
+export interface PersonaRestringida {
+  id: number;
+  documento: string;
+  nombre_completo: string;
+  tipo_persona: 'EX_EMPLEADO' | 'CONTRATISTA_SANCIONADO' | 'VISITANTE_VETADO' | 'INVESTIGACION_JUDICIAL';
+  motivo: string;
+  severidad: 'BLOQUEO_TOTAL' | 'REQUERIMIENTO_POLICIA' | 'ALERTA_INTERROGATORIO';
+  fecha_registro: string;
+  registrado_por: string;
+  activo: boolean;
 }
 
 export interface MaquinariaPesada {
@@ -218,3 +236,41 @@ export interface AuditLog {
   ip: string;
   detalle: string;
 }
+
+export interface MinutaGuardia {
+  id: number;
+  fecha: string;
+  hora: string;
+  vigilante_nombre: string;
+  tipo_evento: 'RELEVO_TURNO' | 'INSPECCION_PERIMETRAL' | 'INGRESO_VEHICULAR' | 'NOVEDAD_SST' | 'MANTENIMIENTO';
+  descripcion: string;
+  prioridad: 'NORMAL' | 'ALTA' | 'CRITICA';
+}
+
+export interface PermisoTrabajoCaliente {
+  id: number;
+  codigo_permiso: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  trabajador_nombre: string;
+  supervisor_autoriza: string;
+  area_especifica: string;
+  tarea: string;
+  extintor_verificado: boolean;
+  lineas_gases_revisadas: boolean;
+  area_libre_combustibles: boolean;
+  estado: 'ACTIVO' | 'CULMINADO' | 'CANCELADO';
+}
+
+export interface CalibracionBascula {
+  id: number;
+  fecha_calibracion: string;
+  fecha_vencimiento: string;
+  laboratorio_certificador: string;
+  certificado_numero: string;
+  error_maximo_tolerado_kg: number;
+  peso_patron_utilizado_ton: number;
+  estado: 'VIGENTE' | 'PROXIMO_A_VENCER' | 'VENCIDO';
+}
+

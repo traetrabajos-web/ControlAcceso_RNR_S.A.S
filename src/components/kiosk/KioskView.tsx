@@ -3,12 +3,14 @@ import { useApp } from '../../context/AppContext';
 import { getScheduleForDate, getCurrentTimeHHMM, timeToMinutes } from '../../utils/time';
 import { CredentialModal } from './CredentialModal';
 import { PassReceiptModal } from './PassReceiptModal';
+import { IntercomModal } from './IntercomModal';
+import { VisitorSelfRegisterModal } from './VisitorSelfRegisterModal';
 import {
   Users,
   LogIn,
   LogOut,
   Clock,
-  Truck,
+  UserCheck,
   Calendar,
   CheckCircle2,
   AlertTriangle,
@@ -23,9 +25,17 @@ import {
   ShieldAlert,
   FileCheck2,
   CheckSquare,
-  Square
+  Square,
+  Lock,
+  Unlock,
+  Radio,
+  Eye,
+  Footprints,
+  Sparkles,
+  Laptop
 } from 'lucide-react';
 import { Trabajador } from '../../types';
+
 
 export const KioskView: React.FC = () => {
   const {
@@ -35,14 +45,27 @@ export const KioskView: React.FC = () => {
     horarios,
     kioskIdentify,
     kioskPunch,
-    setMainView,
-    empresaConfig
+    salidaVisitante,
+    empresaConfig,
+    turnstileState,
+    isSolarMode,
+    intercomOpen,
+    setIntercomOpen
   } = useApp();
 
   const [inputMode, setInputMode] = useState<'KEYPAD' | 'SCANNER'>('KEYPAD');
   const [typedId, setTypedId] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [eppChecked, setEppChecked] = useState(true);
+
+  // EPP specific items for Risk V plant entry
+  const [eppCasco, setEppCasco] = useState(true);
+  const [eppBotas, setEppBotas] = useState(true);
+  const [eppGafas, setEppGafas] = useState(true);
+  const [eppChaleco, setEppChaleco] = useState(true);
+
+  const eppAllValid = useMemo(() => {
+    return eppCasco && eppBotas && eppGafas && eppChaleco;
+  }, [eppCasco, eppBotas, eppGafas, eppChaleco]);
 
   const [punchFeedback, setPunchFeedback] = useState<{
     ok: boolean;
@@ -56,9 +79,11 @@ export const KioskView: React.FC = () => {
   const [feedFilter, setFeedFilter] = useState<'TODOS' | 'ENTRADA' | 'SALIDA'>('TODOS');
   const [isCredentialModalOpen, setIsCredentialModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isVisitorRegisterModalOpen, setIsVisitorRegisterModalOpen] = useState(false);
 
   // Today's schedule
   const todaySchedule = useMemo(() => getScheduleForDate(horarios), [horarios]);
+
 
   // KPIs
   const personalDentro = useMemo(
@@ -88,6 +113,18 @@ export const KioskView: React.FC = () => {
     return kioskIdentify(typedId.trim());
   }, [typedId, kioskIdentify]);
 
+  // Visitor identified by input if not a registered worker
+  const identifiedVisitor = useMemo(() => {
+    if (!typedId.trim() || identifiedData?.trabajador) return null;
+    return (
+      visitantes.find(
+        v =>
+          v.documento === typedId.trim() ||
+          v.gafete_asignado.toUpperCase() === typedId.trim().toUpperCase()
+      ) || null
+    );
+  }, [typedId, identifiedData, visitantes]);
+
   // Keypad actions
   const handleKeypadPress = (key: string) => {
     if (punchFeedback) {
@@ -115,7 +152,7 @@ export const KioskView: React.FC = () => {
 
   const executePunch = () => {
     if (!typedId.trim()) return;
-    const result = kioskPunch(typedId.trim(), eppChecked);
+    const result = kioskPunch(typedId.trim(), eppAllValid);
     setPunchFeedback({
       ok: result.ok,
       mensaje: result.mensaje,
@@ -123,7 +160,7 @@ export const KioskView: React.FC = () => {
       accion: result.accion,
       trabajador: result.trabajador
     });
-    setCountdown(7);
+    setCountdown(6);
   };
 
   // Auto-reset countdown
@@ -161,96 +198,170 @@ export const KioskView: React.FC = () => {
   }, [todaySchedule]);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-6">
+    <main className={`min-h-[calc(100vh-65px)] px-4 lg:px-6 py-6 space-y-6 transition-colors ${
+      isSolarMode ? 'bg-black text-amber-100' : 'bg-slate-100 text-slate-900'
+    }`}>
       {/* 5 Real-Time KPI Cards */}
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex items-center gap-3.5">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 max-w-7xl mx-auto">
+        <div className={`rounded-xl p-4 border shadow-xs flex items-center gap-3.5 ${
+          isSolarMode ? 'bg-slate-900 border-amber-500/40' : 'bg-white border-slate-200'
+        }`}>
           <div className="w-11 h-11 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <span className="block text-2xl font-bold text-slate-900 leading-none">{personalDentro}</span>
+            <span className={`block text-2xl font-bold leading-none font-mono tabular-nums ${isSolarMode ? 'text-amber-300' : 'text-slate-900'}`}>
+              {personalDentro}
+            </span>
             <span className="text-xs text-slate-500 font-medium mt-1 block">Personal en planta</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex items-center gap-3.5">
+        <div className={`rounded-xl p-4 border shadow-xs flex items-center gap-3.5 ${
+          isSolarMode ? 'bg-slate-900 border-amber-500/40' : 'bg-white border-slate-200'
+        }`}>
           <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
             <LogIn className="w-5 h-5" />
           </div>
           <div>
-            <span className="block text-2xl font-bold text-slate-900 leading-none">{entradasHoy}</span>
+            <span className="block text-2xl font-bold text-emerald-600 leading-none font-mono tabular-nums">
+              {entradasHoy}
+            </span>
             <span className="text-xs text-slate-500 font-medium mt-1 block">Entradas de hoy</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex items-center gap-3.5">
+        <div className={`rounded-xl p-4 border shadow-xs flex items-center gap-3.5 ${
+          isSolarMode ? 'bg-slate-900 border-amber-500/40' : 'bg-white border-slate-200'
+        }`}>
           <div className="w-11 h-11 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
             <LogOut className="w-5 h-5" />
           </div>
           <div>
-            <span className="block text-2xl font-bold text-slate-900 leading-none">{salidasHoy}</span>
+            <span className="block text-2xl font-bold text-blue-600 leading-none font-mono tabular-nums">
+              {salidasHoy}
+            </span>
             <span className="text-xs text-slate-500 font-medium mt-1 block">Salidas de hoy</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex items-center gap-3.5">
+        <div className={`rounded-xl p-4 border shadow-xs flex items-center gap-3.5 ${
+          isSolarMode ? 'bg-slate-900 border-amber-500/40' : 'bg-white border-slate-200'
+        }`}>
           <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <span className="block text-2xl font-bold text-slate-900 leading-none">{tardanzasHoy}</span>
+            <span className="block text-2xl font-bold text-amber-600 leading-none font-mono tabular-nums">
+              {tardanzasHoy}
+            </span>
             <span className="text-xs text-slate-500 font-medium mt-1 block">Llegadas tarde</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex items-center gap-3.5 col-span-2 sm:col-span-1">
+        <div className={`rounded-xl p-4 border shadow-xs flex items-center gap-3.5 col-span-2 sm:col-span-1 ${
+          isSolarMode ? 'bg-slate-900 border-amber-500/40' : 'bg-white border-slate-200'
+        }`}>
           <div className="w-11 h-11 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-            <Truck className="w-5 h-5" />
+            <UserCheck className="w-5 h-5" />
           </div>
           <div>
-            <span className="block text-2xl font-bold text-slate-900 leading-none">{visitantesDentro}</span>
-            <span className="text-xs text-slate-500 font-medium mt-1 block">Visitantes / Camiones</span>
+            <span className="block text-2xl font-bold text-purple-600 leading-none font-mono tabular-nums">
+              {visitantesDentro}
+            </span>
+            <span className="text-xs text-slate-500 font-medium mt-1 block">Visitantes en sede</span>
           </div>
         </div>
       </section>
 
       {/* Main Terminal Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
         {/* Left Column: Interactive Kiosk Terminal (7 cols) */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-6">
           {/* Main Card: Input & Mode Switcher */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-7">
+          <div className={`rounded-2xl border shadow-sm p-6 sm:p-7 ${
+            isSolarMode ? 'bg-slate-950 border-amber-500/60' : 'bg-white border-slate-200'
+          }`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Terminal Kiosco Peatonal</h2>
+                <h2 className="text-xl font-bold tracking-tight">Terminal Kiosco Peatonal · Garita #1</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Control biométrico y de identificación en Garita Vía Mamonal Km 7
+                  Identificación biométrica, cédula colombiana (CC) y verificación SST en Mamonal Km 7
                 </p>
               </div>
 
               {/* Mode Switcher Tabs */}
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode('KEYPAD')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                      inputMode === 'KEYPAD' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Keyboard className="w-3.5 h-3.5" />
+                    <span>Teclado Cédula</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode('SCANNER')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                      inputMode === 'SCANNER' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Scan className="w-3.5 h-3.5" />
+                    <span>Lector RFID</span>
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setInputMode('KEYPAD')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                    inputMode === 'KEYPAD' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  onClick={() => setIsCredentialModalOpen(true)}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-200 transition-colors"
+                  title="Ver padrón de credenciales"
                 >
-                  <Keyboard className="w-3.5 h-3.5" />
-                  <span>Teclado Cédula</span>
+                  <Search className="w-3.5 h-3.5 text-orange-500" />
+                  <span className="hidden sm:inline">Padrón CC</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setInputMode('SCANNER')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                    inputMode === 'SCANNER' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Scan className="w-3.5 h-3.5" />
-                  <span>Escáner RFID</span>
-                </button>
+              </div>
+            </div>
+
+            {/* Turnstile / Molinete Physical Visual Barrier Status */}
+            <div className="mt-4">
+              <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                turnstileState === 'UNLOCKED'
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-900 ring-2 ring-emerald-400'
+                  : turnstileState === 'EMERGENCY'
+                  ? 'bg-rose-600 text-white animate-pulse'
+                  : 'bg-slate-900 text-white border-slate-800'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    turnstileState === 'UNLOCKED' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-orange-400'
+                  }`}>
+                    {turnstileState === 'UNLOCKED' ? <Unlock className="w-5 h-5 animate-bounce" /> : <Lock className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider">
+                      {turnstileState === 'UNLOCKED'
+                        ? '🟢 MOLINETE 1 DESBLOQUEADO · PASO HABILITADO'
+                        : turnstileState === 'EMERGENCY'
+                        ? '🚨 MODO EVACUACIÓN ACTIVO · MOLINETE LIBERADO'
+                        : '🔒 MOLINETE 1 CERRADO · EN ESPERA DE MARCACIÓN'}
+                    </h4>
+                    <p className={`text-[11px] ${turnstileState === 'UNLOCKED' ? 'text-emerald-800 font-semibold' : 'text-slate-400'}`}>
+                      {turnstileState === 'UNLOCKED'
+                        ? 'Tiene 5 segundos para cruzar el torniquete de ingreso a planta.'
+                        : 'Digita tu cédula o acerca tu tarjeta RFID al lector para desbloquear.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2 text-xs font-mono">
+                  <Footprints className="w-4 h-4 text-orange-400" />
+                  <span>Garita #1 Mamonal</span>
+                </div>
               </div>
             </div>
 
@@ -264,15 +375,41 @@ export const KioskView: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2 self-end sm:self-auto">
-                <span className="text-[11px] text-slate-500 font-mono">Progreso turno: {shiftProgress}%</span>
+                <span className="text-[11px] text-slate-500 font-mono">Turno: {shiftProgress}%</span>
                 <div className="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
                   <div className="bg-orange-600 h-full rounded-full" style={{ width: `${shiftProgress}%` }}></div>
                 </div>
               </div>
             </div>
 
+            {/* Quick Self-Service Banner for Visitors & Contractors */}
+            <div className="mt-4 p-3.5 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 border border-orange-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-orange-950 uppercase tracking-wide">
+                    ¿Eres Visitante, Proveedor o Contratista?
+                  </h4>
+                  <p className="text-[11px] text-orange-800 font-medium">
+                    Auto-registra tu entrada aquí para obtener tu pase digital y abrir el molinete al instante.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVisitorRegisterModalOpen(true)}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:scale-95 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm shadow-orange-600/20 transition-all shrink-0 cursor-pointer"
+              >
+                <span>Registrar Ingreso</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {/* Input Mode 1: Numeric Touch Keypad */}
             {inputMode === 'KEYPAD' && (
+
               <div className="mt-5 space-y-4">
                 <div>
                   <label htmlFor="kiosk-cedula-input" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -292,7 +429,7 @@ export const KioskView: React.FC = () => {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') executePunch();
                       }}
-                      className="w-full pl-4 pr-24 py-3.5 bg-slate-50 border-2 border-slate-300 focus:border-orange-500 focus:bg-white rounded-xl text-xl sm:text-2xl font-mono tracking-widest text-slate-900 focus:outline-none transition-all shadow-inner"
+                      className="w-full pl-4 pr-24 py-3.5 bg-slate-50 border-2 border-slate-300 focus:border-orange-500 focus:bg-white rounded-xl text-xl sm:text-2xl font-mono tracking-widest text-slate-900 focus:outline-none transition-all shadow-inner tabular-nums"
                     />
                     {typedId && (
                       <button
@@ -316,14 +453,14 @@ export const KioskView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Touch Keypad */}
+                {/* Heavy Duty Touch Keypad */}
                 <div className="grid grid-cols-3 gap-2.5 max-w-md mx-auto pt-2">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
                     <button
                       key={num}
                       type="button"
                       onClick={() => handleKeypadPress(num)}
-                      className="h-14 sm:h-16 bg-slate-100 hover:bg-orange-500 hover:text-white active:scale-95 text-slate-800 text-2xl font-bold font-mono rounded-xl border border-slate-200 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none"
+                      className="h-16 bg-slate-100 hover:bg-orange-500 hover:text-white active:scale-95 text-slate-900 text-2xl font-bold font-mono rounded-xl border border-slate-300 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none tabular-nums"
                     >
                       {num}
                     </button>
@@ -332,16 +469,16 @@ export const KioskView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleKeypadPress('CLEAR')}
-                    className="h-14 sm:h-16 bg-rose-50 hover:bg-rose-500 hover:text-white active:scale-95 text-rose-700 text-lg font-bold rounded-xl border border-rose-200 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none"
+                    className="h-16 bg-rose-50 hover:bg-rose-500 hover:text-white active:scale-95 text-rose-700 text-base font-bold rounded-xl border border-rose-200 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none"
                     title="Limpiar"
                   >
-                    C
+                    LIMPIAR
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleKeypadPress('0')}
-                    className="h-14 sm:h-16 bg-slate-100 hover:bg-orange-500 hover:text-white active:scale-95 text-slate-800 text-2xl font-bold font-mono rounded-xl border border-slate-200 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none"
+                    className="h-16 bg-slate-100 hover:bg-orange-500 hover:text-white active:scale-95 text-slate-900 text-2xl font-bold font-mono rounded-xl border border-slate-300 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none tabular-nums"
                   >
                     0
                   </button>
@@ -349,7 +486,7 @@ export const KioskView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleKeypadPress('BACK')}
-                    className="h-14 sm:h-16 bg-slate-200 hover:bg-slate-600 hover:text-white active:scale-95 text-slate-700 rounded-xl border border-slate-300 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none"
+                    className="h-16 bg-slate-200 hover:bg-slate-600 hover:text-white active:scale-95 text-slate-700 rounded-xl border border-slate-300 transition-all shadow-xs flex items-center justify-center cursor-pointer select-none"
                     title="Borrar dígito"
                   >
                     <Delete className="w-6 h-6" />
@@ -365,15 +502,15 @@ export const KioskView: React.FC = () => {
                   {/* Laser Scanning Beam animation */}
                   <div className="w-32 h-32 mx-auto rounded-2xl border-2 border-orange-500 bg-slate-800/80 flex flex-col items-center justify-center relative overflow-hidden">
                     <Scan className="w-12 h-12 text-orange-400" />
-                    <span className="text-[10px] text-slate-400 mt-2 font-mono">SENSOR RFID / QR</span>
+                    <span className="text-[10px] text-slate-400 mt-2 font-mono">SENSOR RFID / BARCODE</span>
                     {isScanning && (
                       <div className="absolute inset-x-0 h-1 bg-red-500 shadow-md shadow-red-500/80 animate-bounce"></div>
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm">Escáner de Proximidad Activo</h4>
+                    <h4 className="font-bold text-sm">Escáner Óptico y RFID Activo</h4>
                     <p className="text-xs text-slate-400 max-w-sm mx-auto mt-0.5">
-                      Haz clic en cualquiera de las credenciales de colaboradores para simular el acercamiento de la tarjeta física al lector:
+                      Haz clic en cualquiera de las credenciales para simular el acercamiento de la tarjeta física:
                     </p>
                   </div>
                 </div>
@@ -414,9 +551,9 @@ export const KioskView: React.FC = () => {
               </button>
             </div>
 
-            {/* Quick 1-click test pills */}
+            {/* Quick 1-click test simulation bar */}
             <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
-              <span className="font-semibold text-slate-600">Acceso rápido de prueba:</span>
+              <span className="font-semibold text-slate-600">Simulación rápida:</span>
               <button
                 type="button"
                 onClick={() => setTypedId('73189450')}
@@ -438,11 +575,29 @@ export const KioskView: React.FC = () => {
               >
                 1051892301 (Suspendido)
               </button>
+              <button
+                type="button"
+                onClick={() => setTypedId('73198004')}
+                className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md transition-colors font-mono"
+              >
+                73198004 (Visitante)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTypedId('19827364')}
+                className="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md transition-colors font-mono font-bold"
+                title="Probar persona con veto activo en lista de exclusión"
+              >
+                19827364 (Veto Seguridad)
+              </button>
             </div>
           </div>
 
+
           {/* Card 2: Dynamic Worker Status Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div className={`rounded-2xl border shadow-sm p-6 ${
+            isSolarMode ? 'bg-slate-950 border-amber-500/60' : 'bg-white border-slate-200'
+          }`}>
             {punchFeedback ? (
               <div className={`rounded-xl p-6 border ${
                 punchFeedback.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-950'
@@ -457,15 +612,15 @@ export const KioskView: React.FC = () => {
                 </h3>
                 <p className="text-sm font-medium">{punchFeedback.mensaje}</p>
 
-                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                  <div className="bg-white/90 border border-slate-200 px-3 py-1 rounded-full text-xs font-mono font-bold text-slate-700">
-                    Hora: {punchFeedback.hora} · Acción: {punchFeedback.accion}
-                  </div>
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1 font-mono text-xs">
+                  <span className="font-semibold text-slate-700">Hora: {punchFeedback.hora}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-semibold text-slate-700">Acción: {punchFeedback.accion}</span>
                   {punchFeedback.ok && punchFeedback.trabajador && (
                     <button
                       type="button"
                       onClick={() => setIsReceiptModalOpen(true)}
-                      className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-full text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
+                      className="ml-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
                     >
                       <FileCheck2 className="w-3.5 h-3.5" />
                       <span>Ver Comprobante Digital</span>
@@ -498,8 +653,8 @@ export const KioskView: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                         <h3 className="text-lg font-bold text-slate-900">{identifiedData.trabajador.nombre_completo}</h3>
                         {identifiedData.trabajador.es_puesto_critico && (
-                          <span className="text-[10px] bg-red-100 text-red-800 border border-red-200 px-2 py-0.5 rounded font-bold uppercase">
-                            Puesto Crítico
+                          <span className="text-[11px] text-rose-700 font-bold tracking-wide">
+                            · Puesto Crítico
                           </span>
                         )}
                       </div>
@@ -507,52 +662,90 @@ export const KioskView: React.FC = () => {
                         <HardHat className="w-4 h-4 text-orange-600" />
                         {identifiedData.trabajador.cargo} · {identifiedData.trabajador.departamento}
                       </p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 justify-center sm:justify-start">
-                        <span className="font-mono font-semibold bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 justify-center sm:justify-start font-mono">
+                        <span className="font-semibold text-slate-700">
                           {identifiedData.trabajador.codigo_credencial}
                         </span>
-                        <span>CC {identifiedData.trabajador.documento}</span>
+                        <span>· CC {identifiedData.trabajador.documento}</span>
                         {identifiedData.trabajador.rh && <span>· RH {identifiedData.trabajador.rh}</span>}
                       </div>
                     </div>
                   </div>
 
                   <div className="text-center sm:text-right">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                    <span className={`text-xs font-bold block ${
                       identifiedData.trabajador.ubicacion_actual === 'DENTRO_PLANTA'
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        ? 'text-emerald-700'
+                        : 'text-slate-600'
                     }`}>
-                      {identifiedData.trabajador.ubicacion_actual === 'DENTRO_PLANTA' ? '📍 DENTRO DE PLANTA' : 'FUERA DE PLANTA'}
+                      {identifiedData.trabajador.ubicacion_actual === 'DENTRO_PLANTA' ? '● Dentro de Planta' : '○ Fuera de Planta'}
                     </span>
                     {identifiedData.minutos_en_planta !== null && (
-                      <span className="block text-xs text-slate-500 mt-1">
+                      <span className="block text-xs text-slate-500 font-mono mt-1 tabular-nums">
                         Laborado hoy: {Math.floor(identifiedData.minutos_en_planta / 60)}h {identifiedData.minutos_en_planta % 60}m
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* EPP Verification Checklist */}
+                {/* Interactive EPP Verification Checklist for Yard Workers */}
                 {identifiedData.accion_sugerida === 'ENTRADA' && identifiedData.trabajador.tipo_personal === 'PATIO' && (
-                  <div className="p-3.5 bg-orange-50/60 border border-orange-200 rounded-xl space-y-2">
+                  <div className="p-4 bg-orange-50/70 border border-orange-200 rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-orange-900 flex items-center gap-1.5">
+                      <span className="font-bold text-xs text-orange-950 flex items-center gap-1.5">
                         <HardHat className="w-4 h-4 text-orange-600" />
-                        <span>Verificación SST de Elementos de Protección Personal (EPP Obligatorio)</span>
+                        <span>Inspección SST de Elementos de Protección Personal (EPP Obligatorio - Riesgo V)</span>
                       </span>
+                      <span className={`text-[11px] font-bold ${eppAllValid ? 'text-emerald-700' : 'text-rose-700'}`}>
+                        {eppAllValid ? '✓ EPP Conforme' : '✗ EPP Incompleto'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <button
                         type="button"
-                        onClick={() => setEppChecked(!eppChecked)}
-                        className="flex items-center gap-1.5 text-xs text-orange-800 font-bold hover:underline cursor-pointer"
+                        onClick={() => setEppCasco(c => !c)}
+                        className={`p-2 rounded-lg border text-left font-semibold transition-all ${
+                          eppCasco ? 'bg-white border-emerald-400 text-emerald-900 shadow-xs' : 'bg-rose-50 border-rose-300 text-rose-800'
+                        }`}
                       >
-                        {eppChecked ? <CheckSquare className="w-4 h-4 text-orange-600" /> : <Square className="w-4 h-4 text-slate-400" />}
-                        <span>{eppChecked ? 'EPP Verificado' : 'Sin EPP'}</span>
+                        <div className="text-[10px] text-slate-400">Casco Barbuquejo</div>
+                        <div>{eppCasco ? '✓ Verificado' : '✗ Falta Casco'}</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEppBotas(b => !b)}
+                        className={`p-2 rounded-lg border text-left font-semibold transition-all ${
+                          eppBotas ? 'bg-white border-emerald-400 text-emerald-900 shadow-xs' : 'bg-rose-50 border-rose-300 text-rose-800'
+                        }`}
+                      >
+                        <div className="text-[10px] text-slate-400">Botas Puntera</div>
+                        <div>{eppBotas ? '✓ Verificado' : '✗ Falta Botas'}</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEppGafas(g => !g)}
+                        className={`p-2 rounded-lg border text-left font-semibold transition-all ${
+                          eppGafas ? 'bg-white border-emerald-400 text-emerald-900 shadow-xs' : 'bg-rose-50 border-rose-300 text-rose-800'
+                        }`}
+                      >
+                        <div className="text-[10px] text-slate-400">Gafas Seguridad</div>
+                        <div>{eppGafas ? '✓ Verificado' : '✗ Falta Gafas'}</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEppChaleco(c => !c)}
+                        className={`p-2 rounded-lg border text-left font-semibold transition-all ${
+                          eppChaleco ? 'bg-white border-emerald-400 text-emerald-900 shadow-xs' : 'bg-rose-50 border-rose-300 text-rose-800'
+                        }`}
+                      >
+                        <div className="text-[10px] text-slate-400">Chaleco Reflectivo</div>
+                        <div>{eppChaleco ? '✓ Verificado' : '✗ Falta Chaleco'}</div>
                       </button>
                     </div>
-                    <p className="text-[11px] text-orange-800/80">
-                      Requisito de ingreso: Casco de seguridad, botas punta de acero, chaleco reflectivo y gafas de protección.
-                    </p>
                   </div>
                 )}
 
@@ -588,7 +781,7 @@ export const KioskView: React.FC = () => {
                   <button
                     type="button"
                     onClick={executePunch}
-                    className={`w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 shadow-lg transition-all ${
+                    className={`w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
                       identifiedData.accion_sugerida === 'ENTRADA'
                         ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
                         : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/30'
@@ -597,123 +790,199 @@ export const KioskView: React.FC = () => {
                     {identifiedData.accion_sugerida === 'ENTRADA' ? (
                       <>
                         <LogIn className="w-5 h-5" />
-                        <span>Confirmar y Registrar ENTRADA a Planta</span>
+                        <span>Confirmar y Desbloquear Molinete (ENTRADA)</span>
                       </>
                     ) : (
                       <>
                         <LogOut className="w-5 h-5" />
-                        <span>Confirmar y Registrar SALIDA de Planta</span>
+                        <span>Confirmar y Desbloquear Molinete (SALIDA)</span>
                       </>
                     )}
                   </button>
                 </div>
               </div>
+            ) : identifiedVisitor ? (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="flex items-center gap-3.5 pb-3 border-b border-slate-100">
+                  <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xl shrink-0">
+                    <UserCheck className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">
+                      Visitante Identificado
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900">{identifiedVisitor.nombre_completo}</h3>
+                    <p className="text-xs text-slate-500 font-mono">
+                      CC {identifiedVisitor.documento} · {identifiedVisitor.empresa_origen}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Gafete / Pase:</span>
+                    <span className="font-mono font-bold text-slate-900">{identifiedVisitor.gafete_asignado}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Persona Visitada:</span>
+                    <span className="font-semibold text-slate-900">{identifiedVisitor.anfitrion_visitado}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Hora de Ingreso:</span>
+                    <span className="font-mono font-semibold text-slate-900">{identifiedVisitor.fecha} a las {identifiedVisitor.hora_ingreso}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Estado de Permanencia:</span>
+                    <span className={`font-bold font-mono ${identifiedVisitor.estado === 'DENTRO' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                      {identifiedVisitor.estado === 'DENTRO' ? 'PRESENTE EN SEDE' : 'SALIDA YA REGISTRADA'}
+                    </span>
+                  </div>
+                </div>
+
+                {identifiedVisitor.equipos_ingresados && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs flex items-start gap-2.5">
+                    <Laptop className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-900 block">Declaración de Equipos al Ingreso:</span>
+                      <span className="text-amber-800 font-medium block">{identifiedVisitor.equipos_ingresados}</span>
+                      <span className="text-[10px] text-amber-700 block mt-0.5">
+                        Al salir, el oficial de seguridad en garita inspeccionará físicamente estos artículos.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+
+                {identifiedVisitor.estado === 'DENTRO' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      salidaVisitante(identifiedVisitor.id);
+                      setPunchFeedback({
+                        ok: true,
+                        mensaje: `Salida de visitante autorizada: ${identifiedVisitor.nombre_completo}. ¡Gracias por visitarnos!`,
+                        hora: getCurrentTimeHHMM(),
+                        accion: 'SALIDA'
+                      });
+                      setCountdown(6);
+                    }}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>Confirmar Salida de Visitante y Desbloquear Molinete</span>
+                  </button>
+                ) : (
+                  <div className="p-3 bg-slate-100 rounded-xl text-center text-xs text-slate-600">
+                    Este visitante ya registró su salida previamente a las {identifiedVisitor.hora_salida}.
+                  </div>
+                )}
+              </div>
             ) : (
-              <div className="py-8 text-center text-slate-400 space-y-2">
-                <ShieldCheck className="w-12 h-12 text-slate-300 mx-auto" />
-                <h4 className="font-semibold text-slate-700 text-base">Terminal en Espera de Identificación</h4>
+              <div className="p-8 text-center text-slate-400 space-y-2">
+                <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h4 className="font-bold text-slate-700 text-sm">Esperando Identificación de Personal o Visitante</h4>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Acerca tu credencial al sensor RFID o ingresa tu número de cédula para fichar tu asistencia.
+                  Ingresa tu número de documento en el teclado numérico o escanea tu credencial para registrar tu entrada o salida.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column: Live Movements Feed (5 cols) */}
-        <aside className="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col h-full">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-slate-900 text-base">Movimientos de Hoy</h3>
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                En vivo
-              </span>
-            </div>
+        {/* Right Column: Live Movement Feed (5 cols) */}
+        <aside className="lg:col-span-5 xl:col-span-4 space-y-4">
+          <div className={`rounded-2xl border shadow-sm p-5 space-y-3 ${
+            isSolarMode ? 'bg-slate-950 border-amber-500/60' : 'bg-white border-slate-200'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Movimientos en Vivo</h3>
+                <p className="text-[11px] text-slate-500">Últimos registros en Garita Mamonal</p>
+              </div>
 
-            {/* Filter Tabs */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-xs">
-              {(['TODOS', 'ENTRADA', 'SALIDA'] as const).map(tab => (
+              {/* Filter Tabs */}
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-[11px]">
                 <button
-                  key={tab}
                   type="button"
-                  onClick={() => setFeedFilter(tab)}
-                  className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                    feedFilter === tab ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                  onClick={() => setFeedFilter('TODOS')}
+                  className={`px-2 py-1 rounded font-semibold transition-all ${
+                    feedFilter === 'TODOS' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {tab === 'TODOS' ? 'Todos' : tab === 'ENTRADA' ? 'Entradas' : 'Salidas'}
+                  Todos
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Movement items */}
-          <div className="mt-4 flex-1 overflow-y-auto space-y-2.5 max-h-[580px] pr-1">
-            {filteredFeed.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-xs">
-                No hay movimientos registrados para este filtro.
-              </div>
-            ) : (
-              filteredFeed.map(r => (
-                <div
-                  key={r.id}
-                  className="p-3 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3 text-xs"
+                <button
+                  type="button"
+                  onClick={() => setFeedFilter('ENTRADA')}
+                  className={`px-2 py-1 rounded font-semibold transition-all ${
+                    feedFilter === 'ENTRADA' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white shrink-0 ${
-                      r.hora_salida ? 'bg-blue-600' : 'bg-emerald-600'
-                    }`}>
-                      {r.hora_salida ? <LogOut className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-900 block leading-tight">{r.trabajador_nombre}</span>
-                      <span className="text-[11px] text-slate-500">{r.departamento}</span>
-                    </div>
-                  </div>
+                  Entradas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeedFilter('SALIDA')}
+                  className={`px-2 py-1 rounded font-semibold transition-all ${
+                    feedFilter === 'SALIDA' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Salidas
+                </button>
+              </div>
+            </div>
 
-                  <div className="text-right shrink-0">
-                    <span className="font-mono font-bold text-slate-800 text-xs block">
-                      {r.hora_salida ? r.hora_salida : r.hora_entrada}
-                    </span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                      r.hora_salida
-                        ? 'bg-blue-100 text-blue-800'
-                        : r.estado_asistencia === 'PUNTUAL'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {r.hora_salida ? 'SALIDA' : r.estado_asistencia}
-                    </span>
-                  </div>
+            {/* List */}
+            <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
+              {filteredFeed.length === 0 ? (
+                <div className="p-6 text-center text-slate-400 text-xs">
+                  No hay movimientos registrados para este filtro.
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                filteredFeed.slice(0, 12).map((m) => (
+                  <div
+                    key={m.id}
+                    className="p-3 bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 text-xs transition-colors"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        m.hora_salida ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {m.hora_salida ? <LogOut className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+                      </div>
+                      <div className="truncate">
+                        <span className="font-bold text-slate-900 block truncate">{m.trabajador_nombre}</span>
+                        <span className="text-[11px] text-slate-400 block truncate">
+                          {m.departamento} · CC {m.documento}
+                        </span>
+                      </div>
+                    </div>
 
-          {/* Quick Footer Links */}
-          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setIsCredentialModalOpen(true)}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>Consultar Credencial</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMainView('admin')}
-              className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
-              <span>Consola Supervisión</span>
-            </button>
+                    <div className="text-right shrink-0">
+                      <span className="font-mono font-bold text-slate-800 block">
+                        {m.hora_salida || m.hora_entrada}
+                      </span>
+                      <span className={`text-[10px] font-bold ${
+                        m.estado_asistencia === 'PUNTUAL'
+                          ? 'text-emerald-700'
+                          : m.estado_asistencia.includes('TARDANZA')
+                          ? 'text-amber-700'
+                          : 'text-purple-700'
+                      }`}>
+                        {m.estado_asistencia}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </aside>
       </div>
 
-      {/* Credential Search Modal */}
+      {/* Credential Modal */}
       <CredentialModal
         isOpen={isCredentialModalOpen}
         onClose={() => setIsCredentialModalOpen(false)}
@@ -732,6 +1001,28 @@ export const KioskView: React.FC = () => {
           estadoAsistencia={punchFeedback.ok ? 'PUNTUAL' : 'RECHAZADO'}
         />
       )}
+
+      {/* Intercom 2-Way Security Modal */}
+      <IntercomModal
+        isOpen={intercomOpen}
+        onClose={() => setIntercomOpen(false)}
+      />
+
+      {/* Visitor Self-Registration Modal */}
+      <VisitorSelfRegisterModal
+        isOpen={isVisitorRegisterModalOpen}
+        onClose={() => setIsVisitorRegisterModalOpen(false)}
+        onSuccess={(visitorName, badgeCode) => {
+          setPunchFeedback({
+            ok: true,
+            mensaje: `¡Bienvenido(a), ${visitorName}! Ingreso autorizado con gafete ${badgeCode}. Molinete desbloqueado.`,
+            hora: getCurrentTimeHHMM(),
+            accion: 'ENTRADA'
+          });
+          setCountdown(8);
+        }}
+      />
     </main>
+
   );
 };

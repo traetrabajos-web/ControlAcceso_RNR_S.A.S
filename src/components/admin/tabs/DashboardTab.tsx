@@ -5,7 +5,7 @@ import {
   LogIn,
   LogOut,
   Clock,
-  Truck,
+  UserCheck,
   HardHat,
   AlertOctagon,
   FileSpreadsheet,
@@ -128,11 +128,11 @@ export const DashboardTab: React.FC = () => {
 
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-semibold">Vehículos / Chatarra</span>
-            <Truck className="w-4 h-4 text-purple-600" />
+            <span className="text-xs text-slate-500 font-semibold">Visitantes en Sede</span>
+            <UserCheck className="w-4 h-4 text-purple-600" />
           </div>
           <div className="text-2xl font-bold text-purple-600 mt-2">{visitantesEnPlanta.length}</div>
-          <div className="text-[11px] text-slate-400 mt-1">En pesaje / báscula</div>
+          <div className="text-[11px] text-slate-400 mt-1">Con pase activo en portería</div>
         </div>
       </div>
 
@@ -141,7 +141,7 @@ export const DashboardTab: React.FC = () => {
         {/* Plant Aforo Capacity & Distribution (6 cols) */}
         <div className="lg:col-span-6 bg-white rounded-xl p-5 border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-slate-900">Capacidad y Aforo de Planta Mamonal</h3>
+            <h3 className="font-bold text-sm text-slate-900">Capacidad y Aforo de Sede Cartagena</h3>
             <span className="text-xs font-mono font-bold text-slate-700">{totalOcupacion} / {aforoMax}</span>
           </div>
 
@@ -162,11 +162,11 @@ export const DashboardTab: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-slate-100 space-y-2">
-            <span className="text-xs font-bold text-slate-700 block">Distribución por Zonas:</span>
+            <span className="text-xs font-bold text-slate-700 block">Distribución por Áreas:</span>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div className="p-2.5 bg-orange-50 rounded-lg border border-orange-200">
                 <span className="block font-bold text-orange-950 text-base">{enPatio}</span>
-                <span className="text-[10px] text-orange-800 font-medium">Patio & Grúas</span>
+                <span className="text-[10px] text-orange-800 font-medium">Planta & Operaciones</span>
               </div>
               <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
                 <span className="block font-bold text-blue-950 text-base">{enAdmin}</span>
@@ -174,7 +174,7 @@ export const DashboardTab: React.FC = () => {
               </div>
               <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-200">
                 <span className="block font-bold text-purple-950 text-base">{enBascula}</span>
-                <span className="text-[10px] text-purple-800 font-medium">Báscula Camionera</span>
+                <span className="text-[10px] text-purple-800 font-medium">Recepción / Visitas</span>
               </div>
             </div>
           </div>

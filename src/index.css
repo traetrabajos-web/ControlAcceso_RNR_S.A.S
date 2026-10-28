@@ -5,4 +5,36 @@
     @apply bg-slate-50 text-slate-900 antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Industrial tabular digits for telemetry and financial values */
+  .font-mono,
+  input[type="number"],
+  td.tabular-nums,
+  span.tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Dedicated Print Styles for Gate Receipts, Carnets, and Weigh Tickets */
+@media print {
+  header,
+  aside,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print-area {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
 }

@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertTriangle, UserCheck, ShieldCheck } from 'lucide-react';
 
 export const AdminLogin: React.FC = () => {
-  const { login, quickLoginAs } = useApp();
+  const { login, quickLoginAs, setMainView } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +26,17 @@ export const AdminLogin: React.FC = () => {
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-8 space-y-6">
+        {/* Back to Kiosk Button */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setMainView('public')}
+            className="text-xs font-semibold text-slate-500 hover:text-orange-600 flex items-center gap-1.5 transition-colors"
+          >
+            <span>← Volver al Terminal Kiosco de Garita</span>
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex p-3 rounded-2xl bg-orange-100 text-orange-600 mb-2 shadow-inner">
@@ -124,52 +135,53 @@ export const AdminLogin: React.FC = () => {
             <button
               type="button"
               onClick={() => quickLoginAs('admin@recuperacionesnaranjo.com')}
-              className="p-2 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-lg text-left transition-colors flex items-center gap-2"
+              className="p-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-xl text-left transition-colors flex items-center gap-2"
             >
               <ShieldCheck className="w-4 h-4 text-orange-600 shrink-0" />
               <div>
                 <span className="font-bold text-slate-800 block text-[11px]">Super Admin</span>
-                <span className="text-[10px] text-slate-500">Director General</span>
+                <span className="text-[10px] text-slate-500">Director de Seguridad</span>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => quickLoginAs('vigilante@recuperacionesnaranjo.com')}
-              className="p-2 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-lg text-left transition-colors flex items-center gap-2"
+              className="p-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-xl text-left transition-colors flex items-center gap-2"
             >
               <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <div>
-                <span className="font-bold text-slate-800 block text-[11px]">Vigilante</span>
-                <span className="text-[10px] text-slate-500">Garita / Portería</span>
+                <span className="font-bold text-slate-800 block text-[11px]">Oficial de Garita</span>
+                <span className="text-[10px] text-slate-500">Vigilancia & Puestos</span>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => quickLoginAs('jefepatio@recuperacionesnaranjo.com')}
-              className="p-2 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-lg text-left transition-colors flex items-center gap-2"
+              className="p-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-xl text-left transition-colors flex items-center gap-2"
             >
               <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
               <div>
-                <span className="font-bold text-slate-800 block text-[11px]">Jefe de Patio</span>
-                <span className="text-[10px] text-slate-500">Cuadrilla & Grúas</span>
+                <span className="font-bold text-slate-800 block text-[11px]">Supervisor Operativo</span>
+                <span className="text-[10px] text-slate-500">Aforo de Turnos</span>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => quickLoginAs('contabilidad@recuperacionesnaranjo.com')}
-              className="p-2 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-lg text-left transition-colors flex items-center gap-2"
+              className="p-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-xl text-left transition-colors flex items-center gap-2"
             >
               <UserCheck className="w-4 h-4 text-purple-600 shrink-0" />
               <div>
-                <span className="font-bold text-slate-800 block text-[11px]">Contabilidad</span>
-                <span className="text-[10px] text-slate-500">Nómina & 42h</span>
+                <span className="font-bold text-slate-800 block text-[11px]">Talento Humano / SST</span>
+                <span className="text-[10px] text-slate-500">Asistencia & Padrón</span>
               </div>
             </button>
           </div>
         </div>
+
 
         <div className="text-center text-[11px] text-slate-400">
           🛡️ Autenticación con derivación <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">scrypt</code> y tokens firmados <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">HMAC-SHA256</code>

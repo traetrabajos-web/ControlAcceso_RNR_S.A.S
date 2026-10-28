@@ -16,8 +16,10 @@ import {
   Phone,
   Heart,
   FileCheck,
-  DollarSign
+  DollarSign,
+  Download
 } from 'lucide-react';
+
 
 export const TrabajadoresTab: React.FC = () => {
   const { trabajadores, addWorker, updateWorker, deleteWorker, zonas } = useApp();
@@ -132,23 +134,82 @@ export const TrabajadoresTab: React.FC = () => {
     }
   };
 
+  const exportTrabajadoresCsv = () => {
+    const headers = [
+      'ID',
+      'Credencial',
+      'Documento CC',
+      'Nombre Completo',
+      'Cargo',
+      'Departamento',
+      'Tipo Personal',
+      'Telefono',
+      'Email',
+      'Estado',
+      'ARL Vigente',
+      'Ubicacion Actual',
+      'EPS',
+      'RH',
+      'Contacto Emergencia'
+    ];
+
+    const rows = filtered.map(t => [
+      `"${t.id}"`,
+      `"${t.codigo_credencial}"`,
+      `"${t.documento}"`,
+      `"${t.nombre_completo}"`,
+      `"${t.cargo}"`,
+      `"${t.departamento}"`,
+      `"${t.tipo_personal}"`,
+      `"${t.telefono}"`,
+      `"${t.email}"`,
+      `"${t.estado}"`,
+      `"${t.arl_vigente ? 'SI' : 'NO'}"`,
+      `"${t.ubicacion_actual === 'DENTRO_PLANTA' ? 'En Planta' : 'Fuera'}"`,
+      `"${t.eps || 'N/A'}"`,
+      `"${t.rh || 'N/A'}"`,
+      `"${t.contacto_emergencia || 'N/A'}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `padron_trabajadores_recuperaciones_naranjo_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">👷 Padrón Integral de Trabajadores y SST</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Gestión 360° de personal de planta, maquinaria pesada, certificaciones operativas y carnetización.
+            Gestión completa de trabajadores, carnetización con código QR y control de cobertura ARL / EPS.
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto shadow-xs transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Registrar Nuevo Colaborador</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={exportTrabajadoresCsv}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+            title="Descargar padrón en formato CSV (Excel)"
+          >
+            <Download className="w-4 h-4 text-orange-400" />
+            <span>Descargar Padrón CSV</span>
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Nuevo Colaborador</span>
+          </button>
+        </div>
       </div>
+
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">

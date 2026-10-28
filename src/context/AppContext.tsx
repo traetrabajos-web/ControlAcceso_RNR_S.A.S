@@ -11,7 +11,11 @@ import {
   UsuarioIAM,
   SesionActiva,
   AuditLog,
-  MaquinariaPesada
+  MaquinariaPesada,
+  MinutaGuardia,
+  PermisoTrabajoCaliente,
+  CalibracionBascula,
+  PersonaRestringida
 } from '../types';
 import {
   INITIAL_CONFIG,
@@ -21,12 +25,17 @@ import {
   createInitialTrabajadores,
   createInitialRegistrosAcceso,
   createInitialVisitantes,
+  createInitialPersonasRestringidas,
   createInitialIncidencias,
   createInitialAutorizaciones,
   INITIAL_USUARIOS_IAM,
   createInitialAuditLogs,
+  createInitialMinutas,
+  createInitialPermisosCaliente,
+  INITIAL_CALIBRACION_BASCULA,
   getTodayStr
 } from '../data/initialData';
+
 import { getCurrentTimeHHMM, getScheduleForDate, evaluateAttendance, timeToMinutes, formatDurationMinutes } from '../utils/time';
 import { playAudioCue } from '../utils/audio';
 
@@ -53,11 +62,29 @@ interface AppContextType {
   horarios: HorarioOficial[];
   visitantes: Visitante[];
   incidencias: IncidenciaAcceso[];
+  personasRestringidas: PersonaRestringida[];
+  addPersonaRestringida: (p: Omit<PersonaRestringida, 'id' | 'fecha_registro' | 'activo'>) => void;
+  removePersonaRestringida: (id: number) => void;
+  togglePersonaRestringida: (id: number) => void;
   autorizaciones: AutorizacionExtra[];
   maquinarias: MaquinariaPesada[];
   usuarios: UsuarioIAM[];
   auditLogs: AuditLog[];
   empresaConfig: ConfiguracionEmpresa;
+  minutas: MinutaGuardia[];
+  addMinuta: (m: Omit<MinutaGuardia, 'id' | 'fecha' | 'hora'>) => void;
+  permisosCaliente: PermisoTrabajoCaliente[];
+  addPermisoCaliente: (p: Omit<PermisoTrabajoCaliente, 'id' | 'codigo_permiso' | 'fecha'>) => void;
+  updatePermisoCalienteEstado: (id: number, estado: PermisoTrabajoCaliente['estado']) => void;
+  calibracionBascula: CalibracionBascula;
+  updateCalibracionBascula: (c: Partial<CalibracionBascula>) => void;
+  turnstileState: 'LOCKED' | 'UNLOCKED' | 'EMERGENCY';
+  isSolarMode: boolean;
+  toggleSolarMode: () => void;
+  isAudioMuted: boolean;
+  toggleAudioMuted: () => void;
+  intercomOpen: boolean;
+  setIntercomOpen: (open: boolean) => void;
   login: (email: string, pass: string, force?: boolean) => { ok: boolean; conflict?: boolean; error?: string };
   logout: () => void;
   quickLoginAs: (email: string) => void;
@@ -122,10 +149,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : createInitialVisitantes();
   });
 
+  const [personasRestringidas, setPersonasRestringidas] = useState<PersonaRestringida[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_personas_restringidas`);
+    return saved ? JSON.parse(saved) : createInitialPersonasRestringidas();
+  });
+
   const [incidencias, setIncidencias] = useState<IncidenciaAcceso[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_incidencias`);
     return saved ? JSON.parse(saved) : createInitialIncidencias();
   });
+
 
   const [autorizaciones, setAutorizaciones] = useState<AutorizacionExtra[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_autorizaciones`);
@@ -144,6 +177,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : INITIAL_CONFIG;
   });
 
+  const [minutas, setMinutas] = useState<MinutaGuardia[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_minutas`);
+    return saved ? JSON.parse(saved) : createInitialMinutas();
+  });
+
+  const [permisosCaliente, setPermisosCaliente] = useState<PermisoTrabajoCaliente[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_permisos`);
+    return saved ? JSON.parse(saved) : createInitialPermisosCaliente();
+  });
+
+  const [calibracionBascula, setCalibracionBascula] = useState<CalibracionBascula>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_calibracion`);
+    return saved ? JSON.parse(saved) : INITIAL_CALIBRACION_BASCULA;
+  });
+
+  const [turnstileState, setTurnstileState] = useState<'LOCKED' | 'UNLOCKED' | 'EMERGENCY'>('LOCKED');
+  const [isSolarMode, setIsSolarMode] = useState<boolean>(false);
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
+  const [intercomOpen, setIntercomOpen] = useState<boolean>(false);
+
   // Sync to local storage
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_trabajadores`, JSON.stringify(trabajadores));
@@ -156,6 +209,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_visitantes`, JSON.stringify(visitantes));
   }, [visitantes]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_personas_restringidas`, JSON.stringify(personasRestringidas));
+  }, [personasRestringidas]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_maquinaria`, JSON.stringify(maquinarias));
@@ -176,6 +233,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_audit`, JSON.stringify(auditLogs));
   }, [auditLogs]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_minutas`, JSON.stringify(minutas));
+  }, [minutas]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_permisos`, JSON.stringify(permisosCaliente));
+  }, [permisosCaliente]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_calibracion`, JSON.stringify(calibracionBascula));
+  }, [calibracionBascula]);
 
   const addAudit = (evento: string, modulo: string, userEmail: string, detalle: string) => {
     const newLog: AuditLog = {
@@ -360,6 +429,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const kioskPunch = (ident: string, _bypassEPP = false): PunchResult => {
+    const cleanIdent = ident.trim();
+    const nowTime = getCurrentTimeHHMM();
+    const today = getTodayStr(0);
+
+    // 1. Check emergency lockdown
+    if (empresaConfig.modo_bloqueo_emergencia) {
+      playAudioCue(false);
+      return {
+        ok: false,
+        accion: 'ENTRADA',
+        mensaje: '🚨 PLANTA EN CIERRE PREVENTIVO DE EMERGENCIA: Los accesos y molinetes están bloqueados por protocolo de seguridad SST.',
+        hora: nowTime
+      };
+    }
+
+    // 2. Check blacklist / restricted access
+    const restricted = personasRestringidas.find(p => p.activo && p.documento === cleanIdent);
+    if (restricted) {
+      playAudioCue(false);
+      setTurnstileState('LOCKED');
+      const newIncidencia: IncidenciaAcceso = {
+        id: incidencias.length + 1,
+        fecha_hora: `${today} ${nowTime}`,
+        trabajador_nombre: `${restricted.nombre_completo} [VETO DE SEGURIDAD]`,
+        documento: restricted.documento,
+        zona_nombre: 'Portería Principal Peatonal (Garita Vía Mamonal)',
+        tipo_alerta: 'ACCESO_NO_AUTORIZADO',
+        severidad: 'CRITICA',
+        detalle: `⛔ BLOQUEO DE SEGURIDAD: Persona con veto activo intentó ingresar al sistema. Motivo: ${restricted.motivo}. Severidad: ${restricted.severidad}`,
+        estado_resolucion: 'PENDIENTE',
+        registrado_por: 'Terminal Kiosco Garita'
+      };
+      setIncidencias(prev => [newIncidencia, ...prev]);
+      addAudit('ACCESO_RESTRINGIDO_BLOQUEADO', 'seguridad', 'kiosco@recuperacionesnaranjo.com', `Acceso denegado por veto a ${restricted.nombre_completo} (CC ${restricted.documento})`);
+
+      return {
+        ok: false,
+        accion: 'ENTRADA',
+        mensaje: `⛔ ACCESO DENEGADO: Cédula ${restricted.documento} con RESTRICCIÓN DE SEGURIDAD ACTIVA (${restricted.motivo}). Diríjase a la Garita de Vigilancia.`,
+        hora: nowTime
+      };
+    }
+
     const info = kioskIdentify(ident);
     if (!info || !info.trabajador) {
       playAudioCue(false);
@@ -367,13 +479,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ok: false,
         accion: 'ENTRADA',
         mensaje: 'Cédula o credencial no encontrada en el padrón de la empresa.',
-        hora: getCurrentTimeHHMM()
+        hora: nowTime
       };
     }
 
     const { trabajador: t, accion_sugerida: accion, puede_marcar, motivo_bloqueo } = info;
-    const nowTime = getCurrentTimeHHMM();
-    const today = getTodayStr(0);
+
 
     if (!puede_marcar && accion === 'ENTRADA') {
       playAudioCue(false);
@@ -439,14 +550,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
 
-      playAudioCue(true);
+      if (!isAudioMuted) playAudioCue(true);
+      setTurnstileState('UNLOCKED');
+      setTimeout(() => {
+        setTurnstileState('LOCKED');
+      }, 5000);
+
       addAudit('ENTRADA_REGISTRADA', 'kiosco', 'kiosco@recuperacionesnaranjo.com', `Entrada exitosa de ${t.nombre_completo} [${estadoAsistencia}]`);
 
       return {
         ok: true,
         accion: 'ENTRADA',
         trabajador: { ...t, ubicacion_actual: 'DENTRO_PLANTA', ultima_entrada: `${today} ${nowTime}` },
-        mensaje: `¡Bienvenido(a), ${t.nombre_completo}! Entrada registrada correctamente.`,
+        mensaje: `¡Bienvenido(a), ${t.nombre_completo}! Entrada registrada correctamente. Molinete desbloqueado.`,
         estado_asistencia: estadoAsistencia,
         hora: nowTime
       };
@@ -509,14 +625,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
 
-      playAudioCue(true);
+      if (!isAudioMuted) playAudioCue(true);
+      setTurnstileState('UNLOCKED');
+      setTimeout(() => {
+        setTurnstileState('LOCKED');
+      }, 5000);
+
       addAudit('SALIDA_REGISTRADA', 'kiosco', 'kiosco@recuperacionesnaranjo.com', `Salida exitosa de ${t.nombre_completo} (${durStr} trabajadas)`);
 
       return {
         ok: true,
         accion: 'SALIDA',
         trabajador: { ...t, ubicacion_actual: 'FUERA_PLANTA' },
-        mensaje: `¡Hasta pronto, ${t.nombre_completo}! Salida registrada. Tiempo laborado hoy: ${durStr}.`,
+        mensaje: `¡Hasta pronto, ${t.nombre_completo}! Salida registrada. Tiempo laborado hoy: ${durStr}. Molinete desbloqueado.`,
         hora: nowTime
       };
     }
@@ -532,6 +653,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const today = getTodayStr(0);
 
     if (tipo === 'ENTRADA') {
+      if (empresaConfig.modo_bloqueo_emergencia) {
+        return {
+          ok: false,
+          accion: tipo,
+          mensaje: '🚨 PLANTA EN CIERRE PREVENTIVO: Accesos bloqueados por protocolo SST.',
+          hora: nowTime
+        };
+      }
+
+      const restricted = personasRestringidas.find(p => p.activo && p.documento === t.documento);
+      if (restricted) {
+        return {
+          ok: false,
+          accion: tipo,
+          mensaje: `⛔ ACCESO DENEGADO POR SEGURIDAD: Cédula ${t.documento} tiene restricción activa (${restricted.motivo}).`,
+          hora: nowTime
+        };
+      }
+
       const schedule = getScheduleForDate(horarios);
       const estadoAsistencia = evaluateAttendance(nowTime, empresaConfig.tolerancia_tardanza_min, schedule);
 
@@ -668,32 +808,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registrado_por_email: currentUser?.email || 'vigilante@recuperacionesnaranjo.com'
     };
     setVisitantes(prev => [newVis, ...prev]);
-    addAudit('VISITANTE_INGRESADO', 'báscula', currentUser?.email || 'vigilante', `Ingreso vehicular chatarra: ${newVis.nombre_completo} (${newVis.placa_vehiculo}) - Peso Bruto: ${newVis.peso_bruto_kg || 0} kg`);
+    addAudit('VISITANTE_INGRESADO', 'porteria', currentUser?.email || 'vigilante', `Ingreso de visitante autorizado: ${newVis.nombre_completo} (${newVis.empresa_origen}) - Gafete ${newVis.gafete_asignado}`);
   };
 
-  const salidaVisitante = (id: number, pesoTara?: number) => {
+  const salidaVisitante = (id: number) => {
     const nowTime = getCurrentTimeHHMM();
     setVisitantes(prev =>
       prev.map(v => {
         if (v.id === id) {
-          const tara = pesoTara ?? (v.peso_tara_kg || 10000);
-          const bruto = v.peso_bruto_kg || 25000;
-          const neto = Math.max(0, bruto - tara);
           return {
             ...v,
             hora_salida: nowTime,
-            estado: 'SALIO',
-            peso_tara_kg: tara,
-            peso_neto_kg: neto
+            estado: 'SALIO'
           };
         }
         return v;
       })
     );
-    addAudit('VISITANTE_SALIDA', 'báscula', currentUser?.email || 'vigilante', `Salida y pesaje tara completado para visitante ID ${id}`);
+    addAudit('VISITANTE_SALIDA', 'porteria', currentUser?.email || 'vigilante', `Salida registrada para visitante ID ${id}`);
+  };
+
+  const addPersonaRestringida = (p: Omit<PersonaRestringida, 'id' | 'fecha_registro' | 'activo'>) => {
+    const newId = personasRestringidas.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+    const entry: PersonaRestringida = {
+      ...p,
+      id: newId,
+      fecha_registro: getTodayStr(0),
+      activo: true
+    };
+    setPersonasRestringidas(prev => [entry, ...prev]);
+    addAudit('RESTRICCION_CREADA', 'seguridad', currentUser?.email || 'admin', `Persona agregada a lista de veto: ${entry.nombre_completo} (CC ${entry.documento})`);
+  };
+
+  const removePersonaRestringida = (id: number) => {
+    const target = personasRestringidas.find(p => p.id === id);
+    setPersonasRestringidas(prev => prev.filter(p => p.id !== id));
+    addAudit('RESTRICCION_ELIMINADA', 'seguridad', currentUser?.email || 'admin', `Persona removida de lista de veto: ${target?.nombre_completo}`);
+  };
+
+  const togglePersonaRestringida = (id: number) => {
+    setPersonasRestringidas(prev =>
+      prev.map(p => (p.id === id ? { ...p, activo: !p.activo } : p))
+    );
   };
 
   const addAutorizacion = (a: Omit<AutorizacionExtra, 'id' | 'fecha_programada' | 'estado'>) => {
+
     const newAuto: AutorizacionExtra = {
       ...a,
       id: autorizaciones.length + 1,
@@ -729,9 +889,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleEmergencyLockdown = () => {
     setEmpresaConfig(prev => {
       const nextState = !prev.modo_bloqueo_emergencia;
+      setTurnstileState(nextState ? 'EMERGENCY' : 'LOCKED');
       addAudit('BLOQUEO_EMERGENCIA', 'seguridad', currentUser?.email || 'admin', nextState ? 'ACTIVACIÓN DE BLOQUEO PREVENTIVO DE PLANTA' : 'DESACTIVACIÓN DE BLOQUEO DE PLANTA');
       return { ...prev, modo_bloqueo_emergencia: nextState };
     });
+  };
+
+  const toggleSolarMode = () => setIsSolarMode(prev => !prev);
+  const toggleAudioMuted = () => setIsAudioMuted(prev => !prev);
+
+  const addMinuta = (m: Omit<MinutaGuardia, 'id' | 'fecha' | 'hora'>) => {
+    const today = getTodayStr(0);
+    const nowTime = `${getCurrentTimeHHMM()}:00`;
+    const newEntry: MinutaGuardia = {
+      id: minutas.length + 1,
+      fecha: today,
+      hora: nowTime,
+      ...m
+    };
+    setMinutas(prev => [newEntry, ...prev]);
+    addAudit('MINUTA_REGISTRADA', 'porteria', currentUser?.email || 'vigilante@recuperacionesnaranjo.com', `Novedad de portería: ${m.tipo_evento}`);
+  };
+
+  const addPermisoCaliente = (p: Omit<PermisoTrabajoCaliente, 'id' | 'codigo_permiso' | 'fecha'>) => {
+    const today = getTodayStr(0);
+    const newPermiso: PermisoTrabajoCaliente = {
+      id: permisosCaliente.length + 1,
+      codigo_permiso: `PTC-2026-${String(90 + permisosCaliente.length).padStart(3, '0')}`,
+      fecha: today,
+      ...p
+    };
+    setPermisosCaliente(prev => [newPermiso, ...prev]);
+    addAudit('PERMISO_CALIENTE_CREADO', 'patio', currentUser?.email || 'jefepatio@recuperacionesnaranjo.com', `Permiso de trabajo en caliente emitido: ${newPermiso.codigo_permiso}`);
+  };
+
+  const updatePermisoCalienteEstado = (id: number, estado: PermisoTrabajoCaliente['estado']) => {
+    setPermisosCaliente(prev =>
+      prev.map(p => (p.id === id ? { ...p, estado } : p))
+    );
+  };
+
+  const updateCalibracionBascula = (c: Partial<CalibracionBascula>) => {
+    setCalibracionBascula(prev => ({ ...prev, ...c }));
+    addAudit('BASCULA_CALIBRACION', 'bascula', currentUser?.email || 'admin', 'Certificación metrológica de báscula actualizada.');
   };
 
   const updateEmpresaConfig = (cfg: Partial<ConfiguracionEmpresa>) => {
@@ -764,15 +964,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY}_autorizaciones`);
     localStorage.removeItem(`${STORAGE_KEY}_config`);
     localStorage.removeItem(`${STORAGE_KEY}_audit`);
+    localStorage.removeItem(`${STORAGE_KEY}_minutas`);
+    localStorage.removeItem(`${STORAGE_KEY}_permisos`);
+    localStorage.removeItem(`${STORAGE_KEY}_calibracion`);
+    localStorage.removeItem(`${STORAGE_KEY}_personas_restringidas`);
 
     setTrabajadores(createInitialTrabajadores());
     setRegistros(createInitialRegistrosAcceso());
     setVisitantes(createInitialVisitantes());
+    setPersonasRestringidas(createInitialPersonasRestringidas());
     setMaquinarias(INITIAL_MAQUINARIA);
     setIncidencias(createInitialIncidencias());
     setAutorizaciones(createInitialAutorizaciones());
     setEmpresaConfig(INITIAL_CONFIG);
     setAuditLogs(createInitialAuditLogs());
+    setMinutas(createInitialMinutas());
+    setPermisosCaliente(createInitialPermisosCaliente());
+    setCalibracionBascula(INITIAL_CALIBRACION_BASCULA);
     setActiveSessions([]);
   };
 
@@ -790,12 +998,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         zonas,
         horarios,
         visitantes,
+        personasRestringidas,
+        addPersonaRestringida,
+        removePersonaRestringida,
+        togglePersonaRestringida,
         incidencias,
         autorizaciones,
         maquinarias,
         usuarios,
         auditLogs,
         empresaConfig,
+        minutas,
+        addMinuta,
+        permisosCaliente,
+        addPermisoCaliente,
+        updatePermisoCalienteEstado,
+        calibracionBascula,
+        updateCalibracionBascula,
+        turnstileState,
+        isSolarMode,
+        toggleSolarMode,
+        isAudioMuted,
+        toggleAudioMuted,
+        intercomOpen,
+        setIntercomOpen,
         login,
         logout,
         quickLoginAs,
@@ -817,6 +1043,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateUserPermissions,
         resetAllToPresets
       }}
+
     >
       {children}
     </AppContext.Provider>

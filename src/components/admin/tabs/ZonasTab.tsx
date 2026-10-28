@@ -129,7 +129,7 @@ export const ZonasTab: React.FC = () => {
                 <circle cx="240" cy="185" r="4" fill={empresaConfig.modo_bloqueo_emergencia ? '#ef4444' : '#10b981'} className="animate-ping" />
               </g>
 
-              {/* ZONE 2: Báscula Camionera Metrológica (x: 100, y: 340, w: 220, h: 100) */}
+              {/* ZONE 2: Portería y Acceso Vehicular Sur (x: 100, y: 340, w: 220, h: 100) */}
               <g
                 className="cursor-pointer transition-all hover:opacity-90"
                 onClick={() => setSelectedZoneId(2)}
@@ -146,15 +146,15 @@ export const ZonasTab: React.FC = () => {
                 />
                 <circle cx="125" cy="365" r="10" fill="#d97706" />
                 <text x="125" y="369" fill="#ffffff" fontSize="11" fontWeight="bold" textAnchor="middle">2</text>
-                <text x="145" y="365" fill="#f8fafc" fontSize="11" fontWeight="bold">BÁSCULA CAMIONERA</text>
-                <text x="145" y="378" fill="#94a3b8" fontSize="9">Pesaje 80 Ton · Camiones Carga</text>
+                <text x="145" y="365" fill="#f8fafc" fontSize="11" fontWeight="bold">PORTERÍA VEHICULAR SUR</text>
+                <text x="145" y="378" fill="#94a3b8" fontSize="9">Garita Vehicular · Control de Flota y Visitas</text>
 
                 <rect x="115" y="390" width="190" height="35" rx="4" fill="#0f172a" />
                 <text x="125" y="407" fill="#fbbf24" fontSize="10" fontWeight="bold">
-                  🚛 {getZoneOccupancy(2)} camiones pesando
+                  🚗 {getZoneOccupancy(2)} visitas / vehículos en sede
                 </text>
                 <text x="125" y="420" fill="#94a3b8" fontSize="8">
-                  Tolva de pesado y tara metrológica
+                  Talante de control y verificación de placas
                 </text>
               </g>
 
@@ -185,7 +185,7 @@ export const ZonasTab: React.FC = () => {
                 <text x="125" y="115" fill="#64748b" fontSize="8">Climatizado · Sala de Capacitación</text>
               </g>
 
-              {/* ZONE 3: Patio Principal de Chatarra Ferrosa & No Ferrosa (x: 350, y: 35, w: 320, h: 405) */}
+              {/* ZONE 3: Planta Central y Área Operativa (x: 350, y: 35, w: 320, h: 405) */}
               <g
                 className="cursor-pointer transition-all hover:opacity-90"
                 onClick={() => setSelectedZoneId(3)}
@@ -203,31 +203,32 @@ export const ZonasTab: React.FC = () => {
                 <circle cx="375" cy="65" r="12" fill="#ea580c" />
                 <text x="375" y="70" fill="#ffffff" fontSize="12" fontWeight="bold" textAnchor="middle">3</text>
                 <text x="398" y="65" fill="#ffedd5" fontSize="13" fontWeight="black" letterSpacing="0.5">
-                  PATIO CENTRAL DE CHATARRA
+                  PLANTA CENTRAL Y ÁREA OPERATIVA
                 </text>
                 <text x="398" y="80" fill="#fdba74" fontSize="9">
-                  Clasificación Ferrosa, Cizallado y Grúas (Riesgo V)
+                  Acceso Restringido · EPP Obligatorio y Riesgo V
                 </text>
 
-                {/* Sub-areas inside Yard */}
+                {/* Sub-areas inside Operational Area */}
                 <rect x="370" y="100" width="280" height="90" rx="4" fill="#292524" stroke="#44403c" strokeWidth="1" strokeDasharray="4,4" />
-                <text x="380" y="120" fill="#fed7aa" fontSize="10" fontWeight="bold">🏗️ Bahía Grúa Liebherr LH 40 (Radio 16m)</text>
-                <text x="380" y="135" fill="#a8a29e" fontSize="8.5">Carga de Pulpo Hidráulico · Chatarra Pesada Industrial</text>
-                <text x="380" y="155" fill="#fb923c" fontSize="9" fontWeight="bold">Horómetro: 4,821.5 h</text>
+                <text x="380" y="120" fill="#fed7aa" fontSize="10" fontWeight="bold">🏭 Nave 1 · Muelle de Suministros y Logística</text>
+                <text x="380" y="135" fill="#a8a29e" fontSize="8.5">Recepción de Carga y Materiales Autorizados</text>
+                <text x="380" y="155" fill="#fb923c" fontSize="9" fontWeight="bold">Punto de Control de Acceso Interno</text>
 
                 <rect x="370" y="205" width="280" height="90" rx="4" fill="#292524" stroke="#44403c" strokeWidth="1" strokeDasharray="4,4" />
-                <text x="380" y="225" fill="#fed7aa" fontSize="10" fontWeight="bold">🏗️ Bahía Grúa Fuchs MHL 350 (Radio 15m)</text>
-                <text x="380" y="240" fill="#a8a29e" fontSize="8.5">Clasificación de Chatarra Estructural y Tolete</text>
-                <text x="380" y="260" fill="#fb923c" fontSize="9" fontWeight="bold">Horómetro: 3,412.0 h</text>
+                <text x="380" y="225" fill="#fed7aa" fontSize="10" fontWeight="bold">⚙️ Nave 2 · Área Técnica y Operativa</text>
+                <text x="380" y="240" fill="#a8a29e" fontSize="8.5">Operaciones Industriales con Protocolo SST</text>
+                <text x="380" y="260" fill="#fb923c" fontSize="9" fontWeight="bold">Sensor de Molinete Habilitado</text>
 
                 <rect x="370" y="310" width="280" height="110" rx="4" fill="#0f172a" />
                 <text x="380" y="332" fill="#fb923c" fontSize="12" fontWeight="black">
-                  🦺 Cuadrilla en Patio: {getZoneOccupancy(3)} Operarios
+                  🦺 Personal en Operaciones: {getZoneOccupancy(3)} Trabajadores
                 </text>
                 <text x="380" y="352" fill="#e2e8f0" fontSize="9">EPP Obligatorio: Casco con Barbuquejo, Gafas, Botas Dieléctricas</text>
-                <text x="380" y="370" fill="#94a3b8" fontSize="8.5">Jefe de Patio a cargo: Carlos Mario Mendoza (Radio Ch. 4)</text>
-                <text x="380" y="395" fill="#38bdf8" fontSize="9" fontWeight="bold">Montacargas Yale 7T en tránsito activo</text>
+                <text x="380" y="370" fill="#94a3b8" fontSize="8.5">Supervisor de Turno a cargo: Carlos Mario Mendoza</text>
+                <text x="380" y="395" fill="#38bdf8" fontSize="9" fontWeight="bold">Molinete de Planta Operativo</text>
               </g>
+
 
               {/* ZONE 4: Taller Mecanico y Oxicorte (x: 695, y: 35, w: 175, h: 220) */}
               <g

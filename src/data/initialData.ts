@@ -10,7 +10,10 @@ import {
   ConfiguracionEmpresa,
   UsuarioIAM,
   AuditLog,
-  MaquinariaPesada
+  MaquinariaPesada,
+  MinutaGuardia,
+  PermisoTrabajoCaliente,
+  CalibracionBascula
 } from '../types';
 
 export function getTodayStr(offsetDays = 0): string {
@@ -145,23 +148,24 @@ export const INITIAL_ZONAS: ZonaAcceso[] = [
   {
     id: 2,
     codigo: 'PUERTA-02',
-    nombre: 'Báscula Camionera y Muelle de Pesaje',
-    tipo: 'VEHICULAR_PESADO',
-    nivel_seguridad: 'Nivel 2 — Operativo de Pesaje',
-    ubicacion: 'Báscula Camionera Electrónica 80T y Garita Sur',
-    aforo_maximo: 20,
+    nombre: 'Portería Vehicular Sur y Control de Flota',
+    tipo: 'VEHICULAR',
+    nivel_seguridad: 'Nivel 2 — Acceso Vehicular y Flota',
+    ubicacion: 'Garita y Talante de Acceso Vehicular Sur — Vía Mamonal Km 7',
+    aforo_maximo: 30,
     estado: 'OPERATIVA'
   },
   {
     id: 3,
     codigo: 'PUERTA-03',
-    nombre: 'Patio de Chatarra y Acopio Pesado (Zona Crítica)',
-    tipo: 'OPERACIONAL_CRITICA',
+    nombre: 'Planta Central y Área Operativa (Zona Técnica)',
+    tipo: 'OPERACIONAL',
     nivel_seguridad: 'Nivel 3 — EPP Obligatorio y Riesgo V',
-    ubicacion: 'Área de Prensas Cizalla, Oxicorte y Maniobra Grúas',
-    aforo_maximo: 45,
+    ubicacion: 'Área Operativa Central de Planta',
+    aforo_maximo: 50,
     estado: 'OPERATIVA'
   },
+
   {
     id: 4,
     codigo: 'PUERTA-04',
@@ -921,49 +925,104 @@ export function createInitialVisitantes(): Visitante[] {
       codigo_visita: 'VIS-001',
       nombre_completo: 'Gustavo Adolfo Buelvas',
       documento: '73198004',
-      empresa_origen: 'Transportes y Cargas del Caribe S.A.S.',
+      tipo_persona: 'PROVEEDOR',
+      empresa_origen: 'Transportes y Logística del Caribe S.A.S.',
       placa_vehiculo: 'WHL-892',
-      motivo_visita: 'Entrega de chatarra ferrosa pesada en báscula',
-      anfitrion_visitado: 'Jorge Eliécer Naranjo (Jefe de Patio)',
+      motivo_visita: 'Entrega de suministros e insumos de oficina',
+      anfitrion_visitado: 'Jorge Eliécer Naranjo',
       gafete_asignado: 'VIS-01',
-      zona_id: 2,
-      zona_nombre: 'Báscula Camionera y Muelle de Pesaje',
+      zona_id: 1,
+      zona_nombre: 'Portería Principal y Recepción',
       fecha: today,
       hora_ingreso: '07:40',
       hora_salida: null,
       estado: 'DENTRO',
       registrado_por_email: 'vigilante@recuperacionesnaranjo.com',
-      tipo_material: 'Chatarra Ferrosa Pesada (HMS 1/2)',
-      peso_bruto_kg: 28450,
-      peso_tara_kg: 12100,
-      peso_neto_kg: 16350,
-      induccion_sst: true
+      induccion_sst: true,
+      arl_empresa: 'SURA Seguros',
+      arl_vigente: true,
+      equipos_ingresados: 'Carretilla plegable de carga manual',
+      telefono_contacto: '3128912344'
     },
     {
       id: 2,
       codigo_visita: 'VIS-002',
       nombre_completo: 'Alfonso Rafael Marrugo',
       documento: '73145620',
-      empresa_origen: 'Metales & Desguaces Industriales Mamonal',
+      tipo_persona: 'CONTRATISTA',
+      empresa_origen: 'Soluciones Tecnológicas e Industriales Mamonal',
       placa_vehiculo: 'SZK-314',
-      motivo_visita: 'Descargue de viruta de acero y perfiles oxicortados',
-      anfitrion_visitado: 'Jorge Eliécer Naranjo (Jefe de Patio)',
+      motivo_visita: 'Mantenimiento preventivo de red y fibra óptica',
+      anfitrion_visitado: 'Beatriz Morales',
       gafete_asignado: 'VIS-02',
-      zona_id: 2,
-      zona_nombre: 'Báscula Camionera y Muelle de Pesaje',
+      zona_id: 1,
+      zona_nombre: 'Edificio Administrativo',
       fecha: today,
       hora_ingreso: '08:15',
       hora_salida: null,
       estado: 'DENTRO',
       registrado_por_email: 'vigilante@recuperacionesnaranjo.com',
-      tipo_material: 'Acero Inoxidable 304 y Viruta',
-      peso_bruto_kg: 18200,
-      peso_tara_kg: 9400,
-      peso_neto_kg: 8800,
-      induccion_sst: true
+      induccion_sst: true,
+      arl_empresa: 'Positiva Compañía de Seguros',
+      arl_vigente: true,
+      equipos_ingresados: 'Portátil Dell Latitude SN: 4KJ892, Fusionadora Óptica Fujikura 70S',
+      telefono_contacto: '3156789012'
+    },
+    {
+      id: 3,
+      codigo_visita: 'VIS-003',
+      nombre_completo: 'Mariana Ospina Reyes',
+      documento: '45672190',
+      tipo_persona: 'AUDITOR',
+      empresa_origen: 'Consultoría y Auditoría del Caribe',
+      placa_vehiculo: 'Peatonal',
+      motivo_visita: 'Auditoría documental y revisión de procesos',
+      anfitrion_visitado: 'Beatriz Morales',
+      gafete_asignado: 'VIS-03',
+      zona_id: 1,
+      zona_nombre: 'Edificio Administrativo',
+      fecha: today,
+      hora_ingreso: '09:00',
+      hora_salida: null,
+      estado: 'DENTRO',
+      registrado_por_email: 'vigilante@recuperacionesnaranjo.com',
+      induccion_sst: true,
+      arl_empresa: 'Seguros Bolívar',
+      arl_vigente: true,
+      equipos_ingresados: 'Portátil MacBook Air Apple SN: C02G681, Maletín de auditoría',
+      telefono_contacto: '3014567890'
     }
   ];
 }
+
+export function createInitialPersonasRestringidas(): import('../types').PersonaRestringida[] {
+  const today = getTodayStr(0);
+  return [
+    {
+      id: 1,
+      documento: '19827364',
+      nombre_completo: 'Ernesto Barreto Paternina',
+      tipo_persona: 'EX_EMPLEADO',
+      motivo: 'Terminación con justa causa por falta grave al reglamento de seguridad patrimonial.',
+      severidad: 'BLOQUEO_TOTAL',
+      fecha_registro: today,
+      registrado_por: 'seguridad@recuperacionesnaranjo.com',
+      activo: true
+    },
+    {
+      id: 2,
+      documento: '88123490',
+      nombre_completo: 'Mauricio Gómez Vides',
+      tipo_persona: 'CONTRATISTA_SANCIONADO',
+      motivo: 'Incumplimiento reiterado de protocolos de trabajo en alturas y EPP obligatorio.',
+      severidad: 'BLOQUEO_TOTAL',
+      fecha_registro: today,
+      registrado_por: 'sst@recuperacionesnaranjo.com',
+      activo: true
+    }
+  ];
+}
+
 
 export function createInitialIncidencias(): IncidenciaAcceso[] {
   const today = getTodayStr(0);
@@ -1116,3 +1175,93 @@ export function createInitialAuditLogs(): AuditLog[] {
     }
   ];
 }
+
+export function createInitialMinutas(): MinutaGuardia[] {
+  const today = getTodayStr(0);
+  return [
+    {
+      id: 1,
+      fecha: today,
+      hora: '06:00:00',
+      vigilante_nombre: 'Víctor Hugo Carmona (Guarda Garita 1)',
+      tipo_evento: 'RELEVO_TURNO',
+      descripcion: 'Relevo del turno nocturno recibido sin novedades de armamento ni perimetrales. Molinete peatonal operativo.',
+      prioridad: 'NORMAL'
+    },
+    {
+      id: 2,
+      fecha: today,
+      hora: '07:10:00',
+      vigilante_nombre: 'Víctor Hugo Carmona (Guarda Garita 1)',
+      tipo_evento: 'INSPECCION_PERIMETRAL',
+      descripcion: 'Ronda de inspección por cerramiento perimetral colindante a Vía Mamonal. Valla intacta, alumbrado apagado según protocolo diurno.',
+      prioridad: 'NORMAL'
+    },
+    {
+      id: 3,
+      fecha: today,
+      hora: '07:45:00',
+      vigilante_nombre: 'Víctor Hugo Carmona (Guarda Garita 1)',
+      tipo_evento: 'INGRESO_VEHICULAR',
+      descripcion: 'Ingreso de tractocamión placa TKL-459 de Transportes del Caribe con 27.5 ton de chatarra ferrosa. Conductor con ARL e inducción SST verificada.',
+      prioridad: 'NORMAL'
+    },
+    {
+      id: 4,
+      fecha: today,
+      hora: '08:15:00',
+      vigilante_nombre: 'Víctor Hugo Carmona (Guarda Garita 1)',
+      tipo_evento: 'NOVEDAD_SST',
+      descripcion: 'Se retiene en garita a operario por no portar barbuquejo en casco. Se le suministra repuesto reglamentario desde el dispensador de seguridad.',
+      prioridad: 'ALTA'
+    }
+  ];
+}
+
+export function createInitialPermisosCaliente(): PermisoTrabajoCaliente[] {
+  const today = getTodayStr(0);
+  return [
+    {
+      id: 1,
+      codigo_permiso: 'PTC-2026-089',
+      fecha: today,
+      hora_inicio: '08:00',
+      hora_fin: '12:30',
+      trabajador_nombre: 'Gustavo Adolfo Zúñiga (Oxigenista)',
+      supervisor_autoriza: 'Jorge Eliécer Naranjo (Jefe de Patio)',
+      area_especifica: 'Bahía 2 - Desguace de Vigas Estructurales',
+      tarea: 'Corte por oxicorte de perfiles pesados de 12 pulgadas para prensado.',
+      extintor_verificado: true,
+      lineas_gases_revisadas: true,
+      area_libre_combustibles: true,
+      estado: 'ACTIVO'
+    },
+    {
+      id: 2,
+      codigo_permiso: 'PTC-2026-088',
+      fecha: today,
+      hora_inicio: '07:30',
+      hora_fin: '09:00',
+      trabajador_nombre: 'Héctor Fabio Marín (Mecánico de Planta)',
+      supervisor_autoriza: 'Jorge Eliécer Naranjo (Jefe de Patio)',
+      area_especifica: 'Taller Central de Mantenimiento',
+      tarea: 'Soldadura de refuerzo en pluma de Grúa Liebherr LH 40.',
+      extintor_verificado: true,
+      lineas_gases_revisadas: true,
+      area_libre_combustibles: true,
+      estado: 'CULMINADO'
+    }
+  ];
+}
+
+export const INITIAL_CALIBRACION_BASCULA: CalibracionBascula = {
+  id: 1,
+  fecha_calibracion: '2026-01-10',
+  fecha_vencimiento: '2026-07-10',
+  laboratorio_certificador: 'Metrología & Pesaje del Caribe S.A.S. (Acreditado ONAC / SIC)',
+  certificado_numero: 'CERT-MET-2026-7841',
+  error_maximo_tolerado_kg: 20,
+  peso_patron_utilizado_ton: 20,
+  estado: 'VIGENTE'
+};
+
